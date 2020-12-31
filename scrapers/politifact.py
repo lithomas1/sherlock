@@ -5,15 +5,27 @@ Requires Python 3.8 or greater to run due to asyncio.
 """
 
 import asyncio
+import json
 import re
-from dataclasses import dataclass
+import functools
+import dataclasses
 from typing import ClassVar, List, Optional
 
 import aiohttp
 from bs4 import BeautifulSoup, Tag
 
 
-@dataclass
+def suppress_exceptions(func):
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except:
+            return
+    return inner
+
+
+@dataclasses.dataclass
 class FactCheck:
     speaker: str
     date: str
@@ -28,6 +40,7 @@ class FactCheck:
     footer_date: ClassVar[re.Pattern] = re.compile(r"• (.+)$")
 
     @classmethod
+    @suppress_exceptions
     def from_card(cls, card: Tag):
         return cls(
             speaker=cls.speaker_from_card(card),
@@ -37,6 +50,9 @@ class FactCheck:
             fact_check_date=cls.fact_check_date_from_card(card),
             claim=cls.claim_from_card(card),
         )
+
+    def to_json(self) -> str:
+        return dataclasses.asdict(self)
 
     @staticmethod
     def speaker_from_card(card: Tag) -> str:
@@ -65,7 +81,7 @@ class FactCheck:
     @staticmethod
     def claim_from_card(card: Tag) -> str:
         quote = card.find("div", {"class": "m-statement__quote"})
-        return quote.text.strip()
+        return quote.text.strip().replace("\u201c", "").replace("\u201d", "")
 
 
 def scrape_facts_list(html: str) -> List[Optional[FactCheck]]:
@@ -77,7 +93,7 @@ def scrape_facts_list(html: str) -> List[Optional[FactCheck]]:
 def file_main():
     with open("politifact.html", 'r') as fin:
         html = fin.read()
-    print(scrape_facts_list(html))
+    print(json.dumps([*map(FactCheck.to_json, scrape_facts_list(html))], indent=2))
 
 
 async def main():
