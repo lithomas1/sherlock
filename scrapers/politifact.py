@@ -4,6 +4,7 @@ Tool to scrape claims from politifact.
 Requires Python 3.8 or greater to run due to asyncio.
 """
 
+import argparse
 import asyncio
 import dataclasses
 import functools
@@ -120,14 +121,18 @@ async def scrape_facts_from_page(
 
 
 async def main():
-    ruling = "true"
+    parser = argparse.ArgumentParser(description="Politifact fact check scraper")
+    parser.add_argument("-s", "--page-start", type=int, default=1)
+    parser.add_argument("-e", "--page-end", type=int, default=20)
+    parser.add_argument("-r", "--ruling", type=str, default="true")
+    args = parser.parse_args()
     async with aiohttp.ClientSession() as session:
         checks = await asyncio.gather(
-            *(scrape_facts_from_page(i, ruling, session) for i in range(1, 20))
+            *(scrape_facts_from_page(i, args.ruling, session) for i in range(args.page_start, args.page_end))
         )
     checks = [cc for cc in it.chain(*(c for c in checks if c)) if cc]
-    print(checks)
     v[:] = checks
+    print(json.dumps(list(map(dataclasses.asdict, checks)), indent=2))
 
 
 if __name__ == "__main__":
