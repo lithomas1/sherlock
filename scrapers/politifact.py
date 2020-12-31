@@ -55,25 +55,30 @@ class FactCheck:
         return dataclasses.asdict(self)
 
     @staticmethod
+    @suppress_exceptions
     def speaker_from_card(card: Tag) -> str:
         return card.find("a", {"class": "m-statement__name"}).text.strip()
 
     @classmethod
+    @suppress_exceptions
     def date_from_card(cls, card: Tag) -> str:
         description = card.find("div", {"class": "m-statement__desc"}).text.strip()
         return re.search(cls.description_date, description).group(1).strip()
 
     @classmethod
+    @suppress_exceptions
     def source_from_card(cls, card: Tag) -> str:
         description = card.find("div", {"class": "m-statement__desc"}).text.strip()
         return re.search(cls.description_source, description).group(1).strip()
 
     @classmethod
+    @suppress_exceptions
     def fact_checker_from_card(cls, card: Tag) -> str:
         footer = card.find("footer", {"class": "m-statement__footer"}).text.strip()
         return re.search(cls.footer_author, footer).group(1).strip()
 
     @classmethod
+    @suppress_exceptions
     def fact_check_date_from_card(cls, card: Tag) -> str:
         footer = card.find("footer", {"class": "m-statement__footer"}).text.strip()
         return re.search(cls.footer_date, footer).group(1).strip()
