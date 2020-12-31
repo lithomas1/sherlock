@@ -5,24 +5,27 @@ Requires Python 3.8 or greater to run due to asyncio.
 """
 
 import asyncio
+import dataclasses
+import functools
+import itertools as it
 import json
 import re
-import functools
-import dataclasses
 from typing import ClassVar, List, Optional
 
 import aiohttp
 from bs4 import BeautifulSoup, Tag
 
 
-def suppress_exceptions(func):
-    @functools.wraps(func)
-    def inner(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except:
-            return
-    return inner
+def suppress_exceptions(default=None):
+    def wrapper(func):
+        @functools.wraps(func)
+        def inner(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except:
+                return default
+        return inner
+    return wrapper
 
 
 @dataclasses.dataclass
@@ -34,13 +37,15 @@ class FactCheck:
     fact_check_date: str
     claim: str
 
-    description_date: ClassVar[re.Pattern] = re.compile(r"^stated on ([a-zA-Z]+ \d+, \d+)")
+    description_date: ClassVar[re.Pattern] = re.compile(
+        r"^stated on ([a-zA-Z]+ \d+, \d+)"
+    )
     description_source: ClassVar[re.Pattern] = re.compile(r"in a?n?\ ?(.+):$")
     footer_author: ClassVar[re.Pattern] = re.compile(r"^By (.+) •")
     footer_date: ClassVar[re.Pattern] = re.compile(r"• (.+)$")
 
     @classmethod
-    @suppress_exceptions
+    @suppress_exceptions()
     def from_card(cls, card: Tag):
         return cls(
             speaker=cls.speaker_from_card(card),
@@ -55,30 +60,30 @@ class FactCheck:
         return dataclasses.asdict(self)
 
     @staticmethod
-    @suppress_exceptions
+    @suppress_exceptions()
     def speaker_from_card(card: Tag) -> str:
         return card.find("a", {"class": "m-statement__name"}).text.strip()
 
     @classmethod
-    @suppress_exceptions
+    @suppress_exceptions()
     def date_from_card(cls, card: Tag) -> str:
         description = card.find("div", {"class": "m-statement__desc"}).text.strip()
         return re.search(cls.description_date, description).group(1).strip()
 
     @classmethod
-    @suppress_exceptions
+    @suppress_exceptions()
     def source_from_card(cls, card: Tag) -> str:
         description = card.find("div", {"class": "m-statement__desc"}).text.strip()
         return re.search(cls.description_source, description).group(1).strip()
 
     @classmethod
-    @suppress_exceptions
+    @suppress_exceptions()
     def fact_checker_from_card(cls, card: Tag) -> str:
         footer = card.find("footer", {"class": "m-statement__footer"}).text.strip()
         return re.search(cls.footer_author, footer).group(1).strip()
 
     @classmethod
-    @suppress_exceptions
+    @suppress_exceptions()
     def fact_check_date_from_card(cls, card: Tag) -> str:
         footer = card.find("footer", {"class": "m-statement__footer"}).text.strip()
         return re.search(cls.footer_date, footer).group(1).strip()
@@ -89,22 +94,43 @@ class FactCheck:
         return quote.text.strip().replace("\u201c", "").replace("\u201d", "")
 
 
+@suppress_exceptions([])
 def scrape_facts_list(html: str) -> List[Optional[FactCheck]]:
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.find_all("li", {"class": "o-listicle__item"})
     return list(map(FactCheck.from_card, cards))
 
 
-def file_main():
-    with open("politifact.html", 'r') as fin:
-        html = fin.read()
-    print(json.dumps([*map(FactCheck.to_json, scrape_facts_list(html))], indent=2))
+async def scrape_facts_from_page(
+    page: int, ruling: str, session: aiohttp.ClientSession
+) -> List[Optional[FactCheck]]:
+    """
+    Scrape the fact checks from website.
+
+    :param page: the page number greater than 1
+    :param ruling: the verdict on the fact check eg. true, pants-fire
+    :param session: the aiohttp session to use
+    :return: the fact checks on the page
+    """
+    r = await session.request(
+        method="GET",
+        url=f"https://www.politifact.com/factchecks/list/?page={page}&ruling={ruling}",
+    )
+    return scrape_facts_list(await r.text())
 
 
 async def main():
-    ...
+    ruling = "true"
+    async with aiohttp.ClientSession() as session:
+        checks = await asyncio.gather(
+            *(scrape_facts_from_page(i, ruling, session) for i in range(1, 20))
+        )
+    checks = [cc for cc in it.chain(*(c for c in checks if c)) if cc]
+    print(checks)
+    v[:] = checks
 
 
 if __name__ == "__main__":
-    file_main()
+    # file_main()
+    v = []
     asyncio.run(main())
