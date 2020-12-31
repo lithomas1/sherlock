@@ -2,6 +2,9 @@
 Tool to scrape claims from politifact.
 
 Requires Python 3.8 or greater to run due to asyncio.
+
+Run with -e 100
+Run with -r pants-fire to get debunked claims
 """
 
 import argparse
@@ -25,7 +28,9 @@ def suppress_exceptions(default=None):
                 return func(*args, **kwargs)
             except:
                 return default
+
         return inner
+
     return wrapper
 
 
@@ -128,7 +133,10 @@ async def main():
     args = parser.parse_args()
     async with aiohttp.ClientSession() as session:
         checks = await asyncio.gather(
-            *(scrape_facts_from_page(i, args.ruling, session) for i in range(args.page_start, args.page_end))
+            *(
+                scrape_facts_from_page(i, args.ruling, session)
+                for i in range(args.page_start, args.page_end)
+            )
         )
     checks = [cc for cc in it.chain(*(c for c in checks if c)) if cc]
     v[:] = checks
@@ -136,6 +144,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    # file_main()
     v = []
     asyncio.run(main())
