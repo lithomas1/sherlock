@@ -1,4 +1,8 @@
 download = curl
+py = python3
+
+test: dataset
+	$(py) -m pytest tests
 
 dataset: data/fever/train.jsonl data/fever/wikidump
 
@@ -12,5 +16,6 @@ data/fever/wikidump:
 	unzip data/fever/wikidump.zip -d data/fever/wikidump
 	rm -rf data/fever/wikidump.zip
 
+.PHONY: clean
 clean:
 	rm -rf data/fever

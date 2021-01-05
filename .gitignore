@@ -1,3 +1,5 @@
 *.swp
+*.egg-info
 .idea
 data/fever
+__pycache__/
