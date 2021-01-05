@@ -1,4 +1,4 @@
-from sherlock.wiki_parser import models
+from sherlock.wiki_parser import data
 
 
 def test_wikientry_from_json():

@@ -4,6 +4,10 @@ py = python3
 test: dataset
 	$(py) -m pytest tests
 
+format:
+	$(py) -m isort .
+	$(py) -m black .
+
 dataset: data/fever/train.jsonl data/fever/wikidump
 
 data/fever/train.jsonl:
