@@ -1,12 +1,13 @@
 # These are strict requirements for reproducing our experiments
 # If you want looser requirements please use requirements-loose.txt
-black==19.10
+black==19.10b0
 dataclasses==0.8.0; python_version < "3.7"
 isort==5.2.0
 numpy==1.19.4
 pandas==1.1.5
 requests==2.25.0
-torch==1.5.0
+torch==1.5.0; python_version < "3.9"
+torch==1.7.1; python_version >= "3.9"
 tqdm==4.55.1
 ujson==4.0.1
 nltk==3.4
