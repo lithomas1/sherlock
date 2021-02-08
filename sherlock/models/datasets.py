@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset
 import warnings
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Dict
 
 
 class FEVERDataset(Dataset):
@@ -86,6 +86,37 @@ class FEVERDataset(Dataset):
 
         return tokens
 
+    def _generate_sentence_labels(self, relevance: int, articles_dict: Dict[str, List[int]]) -> Tuple[List[str],np.ndarray]:
+        """
+
+        :param relevance: int
+            The relevancy of the sentence
+            0 No relation, 1 Supports, 2 Refutes
+        :param articles_dict: Dict[str, List[int]]
+            A dict mapping article titles to a list containing
+            relevant sentence indices.
+        :return: Tuple[List[str], np.ndarray]
+            A tuple containing a list of sentences from the articles and
+            sentence relevancy labels for each.
+        """
+        sentences = []
+        sentence_labels = []
+        for (article_title, sentence_nums) in articles_dict.items():
+            article = self.wiki_parser.get_entry(article_title).text
+            article = sent_tokenize(self._sanitize_text(article))
+            sentences += article
+            labels = np.zeros((len(article), 3))
+            for num in sentence_nums:
+                if num >= len(labels):
+                    warnings.warn(
+                        f"Bad training data: sentence indice was {num} but there are only {len(labels)} sentences",
+                        RuntimeWarning,
+                    )
+                    continue
+                labels[num][relevance] += 1
+            sentence_labels.append(labels)
+        return sentences, sentence_labels
+
     def __getitem__(
         self, idx: int
     ) -> Tuple[List[List[int]], List[List[List[int]]], np.ndarray]:
@@ -113,22 +144,7 @@ class FEVERDataset(Dataset):
                 else:
                     articles_dict[article_title].add(int(sentence_num))
         # Generate labels
-        sentences = []
-        sentence_labels = []
-        for (article_title, sentence_nums) in articles_dict.items():
-            article = self.wiki_parser.get_entry(article_title).text
-            article = sent_tokenize(self._sanitize_text(article))
-            sentences += article
-            labels = np.zeros((len(article), 3))
-            for num in sentence_nums:
-                if num >= len(labels):
-                    warnings.warn(
-                        f"Bad training data: sentence indice was {num} but there are only {len(labels)} sentences",
-                        RuntimeWarning,
-                    )
-                    continue
-                labels[num][relevance] += 1
-            sentence_labels.append(labels)
+        sentences, sentence_labels = self._generate_sentence_labels(relevance, articles_dict)
         # Tokenization
         claim = word_tokenize(claim)
         sentences = [word_tokenize(sentence) for sentence in sentences]
