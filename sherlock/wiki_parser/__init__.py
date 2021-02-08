@@ -14,6 +14,8 @@ class WikiParser:
     cache: Dict[Path, Indexer] = dict()
 
     def __init__(self, wikidir: Path):
+        if not wikidir.exists():
+            raise ValueError("The path that you passed in does not exist")
         self.wikidir = wikidir
         self.wiki_paths = sorted(wikidir.glob("*.jsonl"), key=num_in_path)
         self.indexer = None
