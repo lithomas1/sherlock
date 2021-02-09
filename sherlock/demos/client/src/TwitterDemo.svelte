@@ -25,6 +25,33 @@
   </button>
 {:else}
   {#each claims as claim}
-    <p>{claim}</p>
+    {#if claim === 'loading...' || claim === 'no tweets found'}
+      <p>{claim}</p>
+    {:else}
+      <div class="claim">
+        <span class="claimtext">{claim}</span>
+      </div>
+    {/if}
   {/each}
 {/if}
+
+<style>
+  .claim {
+    margin: auto;
+    transition: .4s ease-in-out;
+    width: 80vw;
+    padding: 1vh;
+    padding-top: .5vh;
+  }
+
+  .claim:nth-of-type(odd) {
+    background: #E5E5E5;
+  }
+
+  .claim:hover {
+    background: lightblue;
+    cursor: pointer;
+    font-size: 1.2em;
+    transition: .2s ease-in-out;
+  }
+</style>

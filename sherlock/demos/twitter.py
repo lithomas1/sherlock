@@ -1,7 +1,10 @@
+import functools
 from typing import List
 
 import twint
 
+
+@functools.lru_cache
 def get_claims(username: str, limit: int = 10) -> List[str]:
     conf = twint.Config(**__twint_config)
     conf.Limit = limit

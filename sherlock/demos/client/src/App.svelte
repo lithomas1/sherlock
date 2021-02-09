@@ -5,10 +5,11 @@
 
   const chooseInput = () => modeStatus = 'input';
   const chooseTwitter = () => modeStatus = 'twitter';
+  const home = () => modeStatus = 'deciding';
 </script>
 
 <main>
-  <h1>Sherlock demo</h1>
+  <h1 on:click={home}>Sherlock demo</h1>
   {#if modeStatus === 'deciding'}
     <div class="button-container">
       <div class="input-button not-phony" on:click={chooseInput} />
@@ -33,6 +34,10 @@
     color: #ff3e00;
     font-size: 4em;
     font-weight: 100;
+  }
+
+  h1:hover {
+    cursor: pointer;
   }
 
   .button-container {
