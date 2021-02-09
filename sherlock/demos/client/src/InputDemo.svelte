@@ -1,4 +1,6 @@
 <script>
+  import CheckClaim from './CheckClaim.svelte';
+
   let claim = '';
   let claimToVerify = '';
 
@@ -18,8 +20,12 @@
 </button>
 
 {#if claimToVerify !== ''}
-  <p>{claimToVerify}</p>
+  <div class="padding" />
+  <CheckClaim claim={claimToVerify} />
 {/if}
 
 <style>
+  .padding {
+    min-height: 2.5%;
+  }
 </style>
