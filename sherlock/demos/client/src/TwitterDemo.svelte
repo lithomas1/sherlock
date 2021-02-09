@@ -4,7 +4,7 @@
   let claims = [];
 
   function selectUserOnKeydown(e) {
-    if (e.key == 'Enter')
+    if (e.key === 'Enter')
       selectUser();
   }
 
