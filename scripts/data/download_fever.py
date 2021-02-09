@@ -1,7 +1,7 @@
 """
 This script downloads the FEVER dataset(https://fever.ai/resources.html) and extracts it into the data directory
 
-The dataset is composed of the training json file and the wikipedia pages(WARNING: the wikipedia pages take a lot
+The dataset is composed of the training json file and the wikidump pages(WARNING: the wikidump pages take a lot
 of space)
 """
 import io
@@ -33,3 +33,4 @@ with zipfile.ZipFile(io.BytesIO(r.content)) as zip_file:
     zip_file.extractall(save_dir + "/wikipedia")
 
 print("Finished downloading Wikipedia articles")
+
