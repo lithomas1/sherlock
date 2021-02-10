@@ -30,6 +30,7 @@ To use the demo, run
 ```
 make
 python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirements-demo.txt
 python3 -m uvicorn sherlock.demos.app:app
 ```
 
