@@ -12,7 +12,9 @@
 </script>
 
 <main>
-  <h1 on:click={home}>Sherlock demo</h1>
+  <div style="display: table; margin: auto">
+    <h1 on:click={home}>Sherlock demo</h1>
+  </div>
   {#if modeStatus === 'deciding'}
     <div class="button-container">
       <div class="input-button not-phony" on:click={chooseInput}>

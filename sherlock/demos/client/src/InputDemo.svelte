@@ -9,7 +9,7 @@
       claimVerification();
   }
 
-  async function claimVerification() {
+  function claimVerification() {
     claimToVerify = claim;
   }
 </script>
