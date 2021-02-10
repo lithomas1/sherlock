@@ -4,6 +4,6 @@
 data/fever
 __pycache__/
 node_modules/
-public/build/
+build/
 .DS_Store
 .built
