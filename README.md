@@ -35,5 +35,5 @@ python3 -m uvicorn sherlock.demos.app:app
 ```
 
 Prerequisites for the demo:
-	* python >= 3.8
-	* npm
+  * python >= 3.8
+  * npm
