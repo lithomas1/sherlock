@@ -1,5 +1,7 @@
 import pytest
+
 from sherlock.data.datasets import FEVERDataset
+
 
 @pytest.fixture(scope="module")
 def fever_dataset():

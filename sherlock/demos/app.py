@@ -16,15 +16,15 @@ app.mount("/public", StaticFiles(directory=f"{public}"), name="pub")
 def verify(claim: str):
     return {
         "agree": [
-            ("the left something", .987),
-            ("the right something", .912),
-            ("another agree", .812),
+            ("the left something", 0.987),
+            ("the right something", 0.912),
+            ("another agree", 0.812),
         ],
         "disagree": [
-            ("a based wiki article", .912),
-            ("another based article", .71),
-            ("yippee another", .61),
-        ]
+            ("a based wiki article", 0.912),
+            ("another based article", 0.71),
+            ("yippee another", 0.61),
+        ],
     }
 
 

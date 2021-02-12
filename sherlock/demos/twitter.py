@@ -16,13 +16,10 @@ def get_claims(username: str, limit: int = 10) -> List[str]:
     except ValueError:
         return []
 
+
 def __sanitize_tweet_of_links(tweet: str) -> str:
     link = tweet.rfind("https://")
     return tweet[:link].strip()
 
 
-__twint_config = {
-    "Store_object": True,
-    "Output": None,
-    "Hide_output": True
-}
+__twint_config = {"Store_object": True, "Output": None, "Hide_output": True}
