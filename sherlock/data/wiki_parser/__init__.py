@@ -5,9 +5,9 @@ from typing import Dict
 import ujson
 from tqdm import tqdm
 
-from sherlock.wiki_parser.data import WikiEntry
-from sherlock.wiki_parser.indexer import Indexer
-from sherlock.wiki_parser.util import num_in_path
+from sherlock.data.wiki_parser.data import WikiEntry
+from sherlock.data.wiki_parser.indexer import Indexer
+from sherlock.data.wiki_parser.util import num_in_path
 
 
 class WikiParser:

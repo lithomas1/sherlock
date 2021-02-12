@@ -1,4 +1,4 @@
-from sherlock.wiki_parser import WikiParser
+from sherlock.data.wiki_parser import WikiParser
 
 from nltk.tokenize import sent_tokenize, word_tokenize
 import numpy as np

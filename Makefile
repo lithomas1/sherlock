@@ -4,7 +4,11 @@ clientf = sherlock/demos/client
 
 all: client
 
-test: dataset
+requirements-loose.txt:
+	$(py) -m pip install -r requirements-loose.txt
+	$(py) -c "import nltk; nltk.download('punkt')"
+
+test: dataset requirements-loose.txt
 	$(py) -m pytest tests
 
 format:

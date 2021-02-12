@@ -3,7 +3,7 @@ from pathlib import Path
 
 import ujson
 
-from sherlock.wiki_parser.util import num_in_path
+from sherlock.data.wiki_parser.util import num_in_path
 
 
 class Indexer(dict):
