@@ -8,7 +8,7 @@ import torch
 from nltk.tokenize import sent_tokenize, word_tokenize
 from torch.utils.data import Dataset
 
-from sherlock.wiki_parser import WikiParser
+from sherlock.data.wiki_parser import WikiParser
 
 
 class FEVERDataset(Dataset):
