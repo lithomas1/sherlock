@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r") as fin:
+with open("requirements-loose.txt", "r") as fin:
     requirements = [r for r in fin.read().split("\n") if r]
 
 setuptools.setup(

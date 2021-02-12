@@ -1,1 +1,1 @@
-import sherlock.wiki_parser
+import sherlock.data.wiki_parser

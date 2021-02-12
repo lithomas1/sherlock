@@ -1,6 +1,6 @@
 import pytest
 
-from sherlock.models.datasets import FEVERDataset
+from sherlock.data.datasets import FEVERDataset
 
 
 @pytest.fixture(scope="module")
