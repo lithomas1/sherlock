@@ -10,7 +10,7 @@ def test_polfactcheck_init():
         "source": "tweet",
         "fact_checker": "Eric Litke",
         "fact_check_date": "December 18, 2020",
-        "claim": "New data something"
+        "claim": "New data something",
     }
     date_items = {"date", "fact_check_date"}
     expected = {k: v for k, v in djson.items() if k not in date_items}

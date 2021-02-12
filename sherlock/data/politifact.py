@@ -4,6 +4,7 @@ from typing import Iterable, List, NamedTuple, overload
 
 import ujson
 
+
 class PolFactCheck(NamedTuple):
     speaker: str
     date: datetime
@@ -48,17 +49,16 @@ class Politifact(List[PolFactCheck]):
             self.__load_data()
 
     def __load_data(self):
-        with open(self._path, 'r') as fin:
-            self.extend(
-                PolFactCheck.from_pol_json(**f)
-                for f in ujson.load(fin)
-            )
+        with open(self._path, "r") as fin:
+            self.extend(PolFactCheck.from_pol_json(**f) for f in ujson.load(fin))
 
     @overload
-    def __getitem__(self, index: int) -> PolFactCheck: ...
+    def __getitem__(self, index: int) -> PolFactCheck:
+        ...
 
     @overload
-    def __getitem__(self, index: slice) -> "Politifact": ...
+    def __getitem__(self, index: slice) -> "Politifact":
+        ...
 
     def __getitem__(self, index):
         if isinstance(index, slice):
