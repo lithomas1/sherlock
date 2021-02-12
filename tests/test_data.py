@@ -9,5 +9,11 @@ def test_wikientry_from_json():
         "The following are the football -LRB- soccer -RRB- events of the year 1928 throughout the world .",
         "Next sentence",
     ]
-    m = data.WikiEntry.from_wiki_json({"id": iid, "text": text, "lines": lines,})
+    m = data.WikiEntry.from_wiki_json(
+        {
+            "id": iid,
+            "text": text,
+            "lines": lines,
+        }
+    )
     assert m.lines == correct_lines

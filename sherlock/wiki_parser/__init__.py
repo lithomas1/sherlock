@@ -17,7 +17,9 @@ class WikiParser:
         self.wikidir = wikidir
         self.wiki_paths = sorted(wikidir.glob("*.jsonl"), key=num_in_path)
         if len(self.wiki_paths) == 0:
-            raise ValueError("The directory that you specified does not exist or is empty")
+            raise ValueError(
+                "The directory that you specified does not exist or is empty"
+            )
         self.indexer = None
         if Indexer.has_combined(wikidir):
             self.indexer = Indexer.from_combined(wikidir)

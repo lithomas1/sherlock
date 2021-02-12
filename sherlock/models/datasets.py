@@ -1,13 +1,14 @@
-from sherlock.wiki_parser import WikiParser
+import warnings
+from pathlib import Path
+from typing import Dict, List, Tuple, Union
 
-from nltk.tokenize import sent_tokenize, word_tokenize
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import torch
+from nltk.tokenize import sent_tokenize, word_tokenize
 from torch.utils.data import Dataset
-import warnings
-from typing import Union, List, Tuple, Dict
+
+from sherlock.wiki_parser import WikiParser
 
 
 class FEVERDataset(Dataset):
@@ -86,7 +87,9 @@ class FEVERDataset(Dataset):
 
         return tokens
 
-    def _generate_sentence_labels(self, relevance: int, articles_dict: Dict[str, List[int]]) -> Tuple[List[str],np.ndarray]:
+    def _generate_sentence_labels(
+        self, relevance: int, articles_dict: Dict[str, List[int]]
+    ) -> Tuple[List[str], np.ndarray]:
         """
 
         :param relevance: int
@@ -144,7 +147,9 @@ class FEVERDataset(Dataset):
                 else:
                     articles_dict[article_title].add(int(sentence_num))
         # Generate labels
-        sentences, sentence_labels = self._generate_sentence_labels(relevance, articles_dict)
+        sentences, sentence_labels = self._generate_sentence_labels(
+            relevance, articles_dict
+        )
         # Tokenization
         claim = word_tokenize(claim)
         sentences = [word_tokenize(sentence) for sentence in sentences]
