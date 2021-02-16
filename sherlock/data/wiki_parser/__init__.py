@@ -5,9 +5,9 @@ from typing import Dict
 import ujson
 from tqdm import tqdm
 
-from sherlock.wiki_parser.data import WikiEntry
-from sherlock.wiki_parser.indexer import Indexer
-from sherlock.wiki_parser.util import num_in_path
+from sherlock.data.wiki_parser.data import WikiEntry
+from sherlock.data.wiki_parser.indexer import Indexer
+from sherlock.data.wiki_parser.util import num_in_path
 
 
 class WikiParser:
@@ -17,7 +17,13 @@ class WikiParser:
         self.wikidir = wikidir
         self.wiki_paths = sorted(wikidir.glob("*.jsonl"), key=num_in_path)
         if len(self.wiki_paths) == 0:
+<<<<<<< HEAD:sherlock/wiki_parser/__init__.py
             raise ValueError("The directory that you specified does not exist or is empty")
+=======
+            raise ValueError(
+                "The directory that you specified does not exist or is empty"
+            )
+>>>>>>> origin/master:sherlock/data/wiki_parser/__init__.py
         self.indexer = None
         if Indexer.has_combined(wikidir):
             self.indexer = Indexer.from_combined(wikidir)

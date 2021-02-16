@@ -20,3 +20,22 @@ To use a different downloading binary such as ``aria2``, set the download variab
 ```
 make dataset -j4 download="aria2c -x 8"
 ```
+
+## Demo
+
+![demo](./img/demo.png)
+
+To use the demo, run
+
+```
+make
+python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirements-demo.txt
+python3 -m uvicorn sherlock.demos.app:app
+```
+
+Our self-hosted server for the demo can be found at https://sherlock.loca.lt/ (NOTE: may not be running all the time)
+
+Prerequisites for the demo:
+  * python >= 3.8
+  * npm

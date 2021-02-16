@@ -1,4 +1,4 @@
-from sherlock.wiki_parser import WikiParser
+from sherlock.data.wiki_parser import WikiParser
 
 from nltk.tokenize import sent_tokenize, word_tokenize
 import numpy as np
@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset
 import warnings
-from typing import Union, List, Tuple, Dict
+from typing import Union, List, Tuple, Dict, Callable, Optional
 
 
 class FEVERDataset(Dataset):
@@ -18,6 +18,8 @@ class FEVERDataset(Dataset):
         wiki_dir: Union[str, Path],
         train_file: Union[str, Path],
         tokenize: bool = True,
+        pre_processor: Optional[Callable] = None,
+        sent_processor: Optional[Callable] = None
     ):
         """
 
@@ -27,6 +29,11 @@ class FEVERDataset(Dataset):
             Path to the train.jsonl file in the FEVER dataset
         :param tokenize: bool
             Whether to tokenize the claim and sentences
+        :param pre_processor: Callable
+            Function to apply to each word after tokenization.
+            Takes in a torch.Tensor of tokens of each word
+        :param sent_processor: Callable
+            Function to apply to each sentence after tokenization and pre_processor
         """
         self.wiki_parser = WikiParser(Path(wiki_dir))
         self.train_dataset = pd.read_json(train_file, lines=True)
@@ -35,6 +42,8 @@ class FEVERDataset(Dataset):
             self.train_dataset["verifiable"] == "VERIFIABLE"
         ]
         self.tokenize = tokenize
+        self.pre_processor = pre_processor
+        self.sent_processor = sent_processor
 
     def _sanitize_text(self, text: str) -> str:
         """
@@ -146,16 +155,21 @@ class FEVERDataset(Dataset):
         # Generate labels
         sentences, sentence_labels = self._generate_sentence_labels(relevance, articles_dict)
         # Tokenization
-        claim = word_tokenize(claim)
-        sentences = [word_tokenize(sentence) for sentence in sentences]
-        for i, sentence in enumerate(sentences):
-            to_append = []
-            for word in sentence:
-                if word.isalnum():
-                    # TODO: (@lithomas1) maybe extract everything not punctuation?
-                    to_append.append(self.tokenize_word(word))
-            sentences[i] = to_append
-        claim = [self.tokenize_word(word) for word in claim]
+        if self.tokenize:
+            claim = word_tokenize(claim)
+            sentences = [word_tokenize(sentence) for sentence in sentences]
+            for i, sentence in enumerate(sentences):
+                to_append = []
+                for word in sentence:
+                    if word.isalnum():
+                        # TODO: (@lithomas1) maybe extract everything not punctuation?
+                        tokens = torch.Tensor(self.tokenize_word(word))
+                        if self.pre_processor is not None:
+                            tokens = self.pre_processor(tokens)
+                        to_append.append(tokens)
+                sentences[i] = to_append
+            if self.pre_processor is not None:
+                claim = [self.pre_processor(torch.Tensor(self.tokenize_word(word))) for word in claim]
         sentence_labels = np.vstack(sentence_labels)
         return claim, sentences, sentence_labels
 

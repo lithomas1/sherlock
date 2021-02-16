@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sherlock.wiki_parser import WikiParser
+from sherlock.data.wiki_parser import WikiParser
 
 
 def test_indexing():
