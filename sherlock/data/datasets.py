@@ -1,9 +1,11 @@
 from sherlock.data.wiki_parser import WikiParser
+from sherlock.data.util import tokenize_word
 
 from nltk.tokenize import sent_tokenize, word_tokenize
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import unicodedata
 import torch
 from torch.utils.data import Dataset
 import warnings
@@ -47,9 +49,9 @@ class FEVERDataset(Dataset):
 
     def _sanitize_text(self, text: str) -> str:
         """
-        Removes strange artifacts from the FEVER Dataset
+        Normalizes words and removes strange artifacts from the FEVER Dataset
 
-        Currently removing useless '-LRB-' and '-RRB' tags
+        Currently removes accents and useless '-LRB-' and '-RRB' tags
 
         :param text: str or List[str]
             Text to sanitize
@@ -60,40 +62,21 @@ class FEVERDataset(Dataset):
             for i, sent in enumerate(text):
                 sent = sent.replace("-LRB-", "")
                 sent = sent.replace("-LSB-", "")
-                text[i] = sent.replace("-RRB-", "")
+                sent = sent.replace("-RRB-", "")
+
+                # Accent removing
+                # ref https://tinyurl.com/3kae7p6r (Stack Overflow)
+                sent = unicodedata.normalize('NFKD', sent)
+                text[i] = u"".join([c for c in text if not unicodedata.combining(c)])
         else:
             text = text.replace("-LRB-", "")
             text = text.replace("-LRB-", "")
             text = text.replace("-RRB-", "")
+            # Accent removing (see comment above)
+            text = unicodedata.normalize("NFKD", text)
+            text = u"".join([c for c in text if not unicodedata.combining(c)])
+
         return text
-
-    def tokenize_word(self, word: str) -> List[int]:
-        """
-        Maps each character in word to integer tokens.
-        Numbers are mapped to themselves. Alphabet characters
-        are mapped to 10-35
-        Non alphanumeric characters are represented by an
-        unknown token(id 36).
-
-        :param word: str
-            Input word to process
-        :return: List[int]
-            A List of character tokens
-
-        """
-        # Normalize
-        word = word.lower()
-        tokens = []
-        for char in word:
-            if char.isnumeric():
-                tokens.append(int(char))
-            elif char.isalpha():
-                idx = ord(char) - 97 + 10  # 97 is ASCII 'a'
-                tokens.append(idx + 10)
-            else:
-                tokens.append(36)
-
-        return tokens
 
     def _generate_sentence_labels(self, relevance: int, articles_dict: Dict[str, List[int]]) -> Tuple[List[str],np.ndarray]:
         """
@@ -154,22 +137,32 @@ class FEVERDataset(Dataset):
                     articles_dict[article_title].add(int(sentence_num))
         # Generate labels
         sentences, sentence_labels = self._generate_sentence_labels(relevance, articles_dict)
-        # Tokenization
-        if self.tokenize:
-            claim = word_tokenize(claim)
-            sentences = [word_tokenize(sentence) for sentence in sentences]
-            for i, sentence in enumerate(sentences):
-                to_append = []
+        # Tokenization/Preprocess
+        claim = word_tokenize(claim)
+        sentences = [word_tokenize(sentence) for sentence in sentences]
+        # Process claim (Assume is 1 sentence)
+        if self.pre_processor is not None:
+            claim = [self.pre_processor(torch.LongTensor(tokenize_word(word))) for word in claim if word.isalnum()]
+        if self.sent_processor is not None:
+            claim = self.sent_processor(torch.cat(claim).unsqueeze(0)).squeeze(0)
+        # Process sentence
+        word_process = self.pre_processor is not None or self.tokenize
+        for i, sentence in enumerate(sentences):
+            to_append = []
+            if word_process:
                 for word in sentence:
                     if word.isalnum():
                         # TODO: (@lithomas1) maybe extract everything not punctuation?
-                        tokens = torch.Tensor(self.tokenize_word(word))
+                        tokens = word
+                        if self.tokenize:
+                            tokens = torch.LongTensor(tokenize_word(word))
                         if self.pre_processor is not None:
                             tokens = self.pre_processor(tokens)
                         to_append.append(tokens)
-                sentences[i] = to_append
-            if self.pre_processor is not None:
-                claim = [self.pre_processor(torch.Tensor(self.tokenize_word(word))) for word in claim]
+            if self.sent_processor is not None:
+                to_append = self.sent_processor(torch.cat(to_append).unsqueeze(0)).squeeze(0)
+            sentences[i] = to_append
+
         sentence_labels = np.vstack(sentence_labels)
         return claim, sentences, sentence_labels
 

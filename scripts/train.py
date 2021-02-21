@@ -20,7 +20,7 @@ if os.getcwd().split("/")[-1] != "sherlock":
 # Config parameters
 seed = 42
 num_workers = 0
-batch_size = 4
+batch_size = 1 # debugging
 model = LSTMModel()
 lr = 1e-3
 
@@ -31,7 +31,8 @@ if seed is not None:
 
 dataset = FEVERDataset("data/fever/wikidump/wiki-pages/",
                        "data/fever/train.jsonl",
-                       pre_processor=)
+                       pre_processor=model.embed_words,
+                       sent_processor=model.embed_sentence)
 dataloader = DataLoader(dataset,
                         shuffle=True,
                         batch_size=batch_size,
@@ -39,6 +40,9 @@ dataloader = DataLoader(dataset,
 optim = optim.Adam(model.parameters(), lr=lr)
 for (claims, sentences_batch, sentence_labels) in dataloader:
     optim.zero_grad()
+    # Reshaping inputs
+    claims = claims.squeeze(1) # new size (1,100), assume single sentence
+    sentences_batch = torch.cat(sentences_batch, dim=1)
 
     # Balancing classes with weighted loss
     class_weights = torch.zeros(3)
@@ -51,7 +55,7 @@ for (claims, sentences_batch, sentence_labels) in dataloader:
     for sentences in sentences_batch:
         article_preds = []
         for sentence in sentences:
-            article_preds.append(model(claims, sentences))
+            article_preds.append(model(claims, sentence.unsqueeze(0)))
         preds.append(torch.stack(article_preds))
     preds = torch.stack(preds)
 

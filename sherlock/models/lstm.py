@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from sherlock.data.util import tokenize_word
+
 
 class LSTMModel(nn.Module):
     """ A simple LSTM Model for Natural Language Inference"""
@@ -15,7 +17,7 @@ class LSTMModel(nn.Module):
             Length of embedding vector for each word
         :param sent_embeds_size: int, default 100
         """
-        super(CharLSTM, self).__init__()
+        super(LSTMModel, self).__init__()
         # 26 Character + 10 digits + Unknown Character
         # 10 dim vector for each
         self.char_embeds = nn.Embedding(37, char_embeds_size)
@@ -25,24 +27,49 @@ class LSTMModel(nn.Module):
         self.sentence_lstm = nn.LSTM(
             input_size=word_embeds_size, hidden_size=sent_embeds_size, batch_first=True
         )
-        self.dense = nn.Linear(3, 3)
+
+        # Prediction LSTM
+        self.lstm1 = nn.LSTM(
+            input_size=2, hidden_size=10, batch_first=True, bidirectional=False
+        )
+
+        self.dense = nn.Linear(10, 3)
 
     def embed_words(self, words):
         """
         Generates a vector representation for each word
         :param words: str or List[int] or List[str] or List[List[int]]
             A word or list of words(or character tokens) to generate embeddings for
-        :return: List[torch.Tensor]
+        :return: torch.Tensor
         """
+        # TODO(@lithomas1): Testing for multiple words
         if isinstance(words, str):
-            words = list(words)
+            words = torch.Tensor(tokenize_word(words))
         elif isinstance(words[0], int):
             # We have single token
-            words =
-        word_vectors = []
-        for word in words:
-            word_vectors.append(self.word_lstm(self.char_embeds(word))[0]) # We want output not hidden layers
-        return word_vectors
+            words = torch.Tensor(words)
+        elif isinstance(words[0], str):
+            words = torch.Tensor([tokenize_word(word) for word in words])
+        else:
+            # Is list of list of tokens
+            words = torch.LongTensor(words)
+        words = self.char_embeds(words)
+        # Check batch
+        if len(words.shape) == 2:
+            words = words.unsqueeze(0)
+        # TODO: Explore alternative methods to mean (e.g. take first, take last, etc)
+        embeddings = torch.mean(self.word_lstm(words)[0], dim=1)  # We want output not hidden layers
+        return embeddings
+
+    def embed_sentence(self, sentence: torch.Tensor):
+        """
+        Generates a vector representation of a sentence
+
+        :param sentence: torch.Tensor
+            Batch first Tensor of word embeddings
+        :return: torch.Tensor[sent_embeds_size]
+        """
+        return torch.mean(self.sentence_lstm(sentence)[0], dim=1).unsqueeze(0)
 
     def forward(self, x, y):
         """
@@ -53,4 +80,6 @@ class LSTMModel(nn.Module):
             The relevance of the sentence
             Relevancy - 0 No relation, 1 Supports, 2 Refutes
         """
-        return self.
+        combined = torch.cat([x,y]).unsqueeze(0)
+        print(combined.shape)
+        return F.softmax(self.dense(self.lstm1(combined)[0]))
