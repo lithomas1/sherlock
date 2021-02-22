@@ -56,8 +56,10 @@ for (claims, sentences_batch, sentence_labels) in dataloader:
         article_preds = []
         for sentence in sentences:
             article_preds.append(model(claims, sentence.unsqueeze(0)))
-        preds.append(torch.stack(article_preds))
-    preds = torch.stack(preds)
+        preds.append(torch.cat(article_preds))
+    preds = torch.cat(preds)
+    # TODO: do this in datasets.py
+    sentence_labels = torch.flatten(sentence_labels, start_dim=0, end_dim=1).long()
 
     loss = criterion(preds, sentence_labels)
     loss.backward()

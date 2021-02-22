@@ -73,13 +73,16 @@ class LSTMModel(nn.Module):
 
     def forward(self, x, y):
         """
-        Returns relevance predictions for sentence vectors
+        Returns relevance predictions for sentence vectors. Note:
+        The output of this function are the raw logits that you'll need
+        to softmax yourself to get probabilities.
         :param x: Claim
         :param y: Sentence
         :return: torch.Tensor[3]
             The relevance of the sentence
             Relevancy - 0 No relation, 1 Supports, 2 Refutes
+
         """
         combined = torch.cat([x,y]).unsqueeze(0)
-        print(combined.shape)
-        return F.softmax(self.dense(self.lstm1(combined)[0]))
+        combined = combined.permute(0, 2, 1) # This is bad but I have no choice :(
+        return self.dense(torch.mean(self.lstm1(combined)[0], dim=1))

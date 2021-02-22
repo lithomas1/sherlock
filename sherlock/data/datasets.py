@@ -97,7 +97,7 @@ class FEVERDataset(Dataset):
             article = self.wiki_parser.get_entry(article_title).text
             article = sent_tokenize(self._sanitize_text(article))
             sentences += article
-            labels = np.zeros((len(article), 3))
+            labels = np.zeros(len(article))
             for num in sentence_nums:
                 if num >= len(labels):
                     warnings.warn(
@@ -105,7 +105,7 @@ class FEVERDataset(Dataset):
                         RuntimeWarning,
                     )
                     continue
-                labels[num][relevance] += 1
+                labels[num] = relevance
             sentence_labels.append(labels)
         return sentences, sentence_labels
 
@@ -163,7 +163,7 @@ class FEVERDataset(Dataset):
                 to_append = self.sent_processor(torch.cat(to_append).unsqueeze(0)).squeeze(0)
             sentences[i] = to_append
 
-        sentence_labels = np.vstack(sentence_labels)
+        sentence_labels = np.concatenate(sentence_labels)
         return claim, sentences, sentence_labels
 
     def __len__(self) -> int:
