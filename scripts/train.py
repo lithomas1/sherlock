@@ -15,7 +15,7 @@ from nltk.tokenize import word_tokenize
 
 # Ensure we are running from correct directory
 import os
-if os.getcwd().split("/")[-1] != "sherlock":
+if "sherlock" not in {os.getcwd().split("\\")[-1], os.getcwd().split("/")[-1]}:
     raise RuntimeError("Please run this script from the base directory as python scripts/train.py")
 # Config parameters
 seed = 42
