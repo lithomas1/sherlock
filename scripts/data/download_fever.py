@@ -33,3 +33,4 @@ with zipfile.ZipFile(io.BytesIO(r.content)) as zip_file:
     zip_file.extractall(save_dir + "/wikipedia")
 
 print("Finished downloading Wikipedia articles")
+
