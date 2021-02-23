@@ -28,29 +28,40 @@ class ClusterRandomSampler(Sampler):
         self.data_source = data_source
         self.batch_size = batch_size
         self.shuffle = shuffle
-        
+
+    @staticmethod
     def flatten_list(self, lst):
         return [item for sublist in lst for item in sublist]
 
     def __iter__(self):
 
-        batch_lists = []
-        for cluster_indices in filter(bool, self.data_source):
-            batches = [cluster_indices[i:i + self.batch_size] for i in range(0, len(cluster_indices), self.batch_size)]
-            # filter our the shorter batches
-            batches = [_ for _ in batches if len(_) == self.batch_size]
-            if self.shuffle:
-                random.shuffle(batches)
-            batch_lists.append(batches)       
-        
-        # flatten lists and shuffle the batches if necessary
-        # this works on batch level
-        lst = self.flatten_list(batch_lists)
-        if self.shuffle:
-            random.shuffle(lst)
-        # final flatten  - produce flat list of indexes
-        lst = self.flatten_list(lst)        
-        return iter(lst)
+        # batch_lists = []
+        # for cluster_indices in filter(bool, self.data_source):
+        #     batches = [cluster_indices[i:i + self.batch_size] for i in range(0, len(cluster_indices), self.batch_size)]
+        #     # filter our the shorter batches
+        #     batches = [_ for _ in batches if len(_) == self.batch_size]
+        #     if self.shuffle:
+        #         random.shuffle(batches)
+        #     batch_lists.append(batches)
+
+        # # flatten lists and shuffle the batches if necessary
+        # # this works on batch level
+        # lst = self.flatten_list(batch_lists)
+        # if self.shuffle:
+        #     random.shuffle(lst)
+        # # final flatten  - produce flat list of indexes
+        # lst = self.flatten_list(lst)
+        # return iter(lst)
+
+        def gen(ds, bs):
+            bigi = list(range(len(ds)))
+            random.shuffle(bigi)
+            for i in bigi:
+                b = ds[(i, -1)]
+                if b:
+                    yield from ((i, j) for j in range(len(b[2])))
+
+        return iter(gen(self.data_source, self.batch_size))
 
     def __len__(self):
         return len(self.data_source)
@@ -165,7 +176,7 @@ class FEVERDataset(Dataset):
         return sentences, sentence_labels
 
     def __getitem__(
-        self, idx: int
+        self, index: Tuple[int, int],
     ) -> Optional[Tuple[List[List[int]], List[List[List[int]]], np.ndarray]]:
         """
 
@@ -175,6 +186,7 @@ class FEVERDataset(Dataset):
             Claim, Sentences of an article, and relevancy labels for each sentence
             if the training data is valid
         """
+        idx, offset = index
         row = self.train_dataset.iloc[idx]
         # Dict matches article titles with relevant sentences nums
         articles_dict = dict()
@@ -198,11 +210,6 @@ class FEVERDataset(Dataset):
             return None
         # Tokenization/Preprocess
         claim = word_tokenize(claim)
-        # try:
-        #     sentences = [word_tokenize(sentence) for sentence in sentences]
-        # except Exception as e:
-        #     breakpoint()
-        #     raise e
         # Process claim (Assume is 1 sentence)
         if self.pre_processor is not None:
             claim = [self.pre_processor(torch.LongTensor(tokenize_word(word))) for word in claim if word.isalnum()]
@@ -213,7 +220,6 @@ class FEVERDataset(Dataset):
         for i, sentence in enumerate(sentences):
             to_append = []
             if word_process:
-                # assert sentence, f"Got empty sentence"
                 for word in sentence:
                     if word.isalnum():
                         # TODO: (@lithomas1) maybe extract everything not punctuation?
@@ -224,16 +230,14 @@ class FEVERDataset(Dataset):
                             tokens = self.pre_processor(tokens)
                         to_append.append(tokens)
             to_append.append(self.pre_processor(torch.LongTensor(tokenize_word("0"))))
-            # assert to_append, f"Got nothing in to_append, {word_process=} {sentence=}"
             if self.sent_processor is not None:
                 to_append = self.sent_processor(torch.cat(to_append).unsqueeze(0)).squeeze(0)
             sentences[i] = to_append
 
         sentence_labels = np.concatenate(sentence_labels)
-        # print("Sentence sizes:", *{s.size() for s in sentences})
-        # print("Claim size:", claim.size())
-        # print("Sentence labels:", sentence_labels.size)
-        return claim, sentences, sentence_labels
+        if offset == -1:
+            return claim, sentences, sentence_labels
+        return claim, sentences[offset: offset + 1], sentence_labels[offset: offset + 1]
 
     def __len__(self) -> int:
         return len(self.train_dataset)

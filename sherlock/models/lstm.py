@@ -85,4 +85,5 @@ class LSTMModel(nn.Module):
         """
         combined = torch.cat([x,y]).unsqueeze(0)
         combined = combined.permute(0, 2, 1) # This is bad but I have no choice :(
+        breakpoint()
         return self.dense(torch.mean(self.lstm1(combined)[0], dim=1))
