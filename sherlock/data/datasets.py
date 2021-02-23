@@ -94,7 +94,13 @@ class FEVERDataset(Dataset):
         sentences = []
         sentence_labels = []
         for (article_title, sentence_nums) in articles_dict.items():
-            article = self.wiki_parser.get_entry(article_title).text
+            try:
+                article = self.wiki_parser.get_entry(article_title).text
+            except KeyError:
+                warnings.warn(
+                    f"Bad article title ({article_title}) found in training data",
+                    RuntimeWarning)
+                continue
             article = sent_tokenize(self._sanitize_text(article))
             sentences += article
             labels = np.zeros(len(article))
@@ -111,13 +117,14 @@ class FEVERDataset(Dataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[List[List[int]], List[List[List[int]]], np.ndarray]:
+    ) -> Optional[Tuple[List[List[int]], List[List[List[int]]], np.ndarray]]:
         """
 
         :param idx: int
             Index of element to retrieve
         :return:
             Claim, Sentences of an article, and relevancy labels for each sentence
+            if the training data is valid
         """
         row = self.train_dataset.iloc[idx]
         # Dict matches article titles with relevant sentences nums
@@ -137,6 +144,9 @@ class FEVERDataset(Dataset):
                     articles_dict[article_title].add(int(sentence_num))
         # Generate labels
         sentences, sentence_labels = self._generate_sentence_labels(relevance, articles_dict)
+        if len(sentences) == 0:
+            # Data is bad
+            return None
         # Tokenization/Preprocess
         claim = word_tokenize(claim)
         sentences = [word_tokenize(sentence) for sentence in sentences]

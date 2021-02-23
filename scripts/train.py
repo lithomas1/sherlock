@@ -1,6 +1,8 @@
 import numpy as np
+import random
 from sherlock.data.datasets import FEVERDataset
 from sherlock.models.lstm import LSTMModel
+from sherlock.models.util import collate_with_none
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -28,6 +30,8 @@ lr = 1e-3
 if seed is not None:
     np.random.seed(seed)
     torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    random.seed(seed)
 
 dataset = FEVERDataset("data/fever/wikidump/wiki-pages/",
                        "data/fever/train.jsonl",
@@ -36,9 +40,15 @@ dataset = FEVERDataset("data/fever/wikidump/wiki-pages/",
 dataloader = DataLoader(dataset,
                         shuffle=True,
                         batch_size=batch_size,
-                        num_workers=num_workers)
+                        num_workers=num_workers,
+                        collate_fn=collate_with_none)
 optim = optim.Adam(model.parameters(), lr=lr)
 for (claims, sentences_batch, sentence_labels) in dataloader:
+
+    # Check for totally corrupted data
+    if len(claims) == 0:
+        continue
+
     optim.zero_grad()
     # Reshaping inputs
     claims = claims.squeeze(1) # new size (1,100), assume single sentence
@@ -62,5 +72,6 @@ for (claims, sentences_batch, sentence_labels) in dataloader:
     sentence_labels = torch.flatten(sentence_labels, start_dim=0, end_dim=1).long()
 
     loss = criterion(preds, sentence_labels)
+    print("Loss: ", loss.item())
     loss.backward()
     optim.step()
