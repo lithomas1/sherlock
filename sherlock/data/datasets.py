@@ -44,8 +44,13 @@ class FEVERDataset(Dataset):
             self.train_dataset["verifiable"] == "VERIFIABLE"
         ]
         self.tokenize = tokenize
+        none_func = lambda *args, **kwargs: None
         self.pre_processor = pre_processor
         self.sent_processor = sent_processor
+
+        pp = pre_processor if pre_processor else none_func
+
+        self._end_of_sentence = lambda : pp(torch.LongTensor([36]))
 
     def _sanitize_text(self, text: str) -> str:
         """
@@ -95,13 +100,15 @@ class FEVERDataset(Dataset):
         sentence_labels = []
         for (article_title, sentence_nums) in articles_dict.items():
             try:
-                article = self.wiki_parser.get_entry(article_title).text
+                entry = self.wiki_parser.get_entry(article_title)
             except KeyError:
                 warnings.warn(
                     f"Bad article title ({article_title}) found in training data",
                     RuntimeWarning)
                 continue
-            article = sent_tokenize(self._sanitize_text(article))
+            # article = sent_tokenize(self._sanitize_text(article))
+            article = list(map(word_tokenize,
+                           map(self._sanitize_text, entry.lines)))
             sentences += article
             labels = np.zeros(len(article))
             for num in sentence_nums:
@@ -149,7 +156,6 @@ class FEVERDataset(Dataset):
             return None
         # Tokenization/Preprocess
         claim = word_tokenize(claim)
-        sentences = [word_tokenize(sentence) for sentence in sentences]
         # Process claim (Assume is 1 sentence)
         if self.pre_processor is not None:
             claim = [self.pre_processor(torch.LongTensor(tokenize_word(word))) for word in claim if word.isalnum()]
@@ -169,6 +175,9 @@ class FEVERDataset(Dataset):
                         if self.pre_processor is not None:
                             tokens = self.pre_processor(tokens)
                         to_append.append(tokens)
+            to_append.append(self._end_of_sentence())
+            if not to_append:
+                continue
             if self.sent_processor is not None:
                 to_append = self.sent_processor(torch.cat(to_append).unsqueeze(0)).squeeze(0)
             sentences[i] = to_append
