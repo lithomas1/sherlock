@@ -32,6 +32,7 @@ class LSTMModel(nn.Module):
         self.lstm1 = nn.LSTM(
             input_size=2, hidden_size=10, batch_first=True, bidirectional=False
         )
+        self._device = torch.device("cpu")
 
         self.dense = nn.Linear(10, 3)
 
@@ -53,7 +54,7 @@ class LSTMModel(nn.Module):
         else:
             # Is list of list of tokens
             words = torch.LongTensor(words)
-        words = self.char_embeds(words)
+        words = self.char_embeds(words.to(self._device))
         # Check batch
         if len(words.shape) == 2:
             words = words.unsqueeze(0)
@@ -88,3 +89,7 @@ class LSTMModel(nn.Module):
         combined = torch.cat([x, y]).unsqueeze(0)
         combined = combined.permute(0, 2, 1)  # This is bad but I have no choice :(
         return self.dense(torch.mean(self.lstm1(combined)[0], dim=1))
+
+    def set_device(self, device):
+        self._device = device
+        return self
