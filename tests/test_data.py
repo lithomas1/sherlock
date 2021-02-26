@@ -8,6 +8,7 @@ def test_wikientry_from_json():
     correct_lines = [
         "The following are the football -LRB- soccer -RRB- events of the year 1928 throughout the world .",
         "Next sentence",
+        ""
     ]
     m = data.WikiEntry.from_wiki_json(
         {

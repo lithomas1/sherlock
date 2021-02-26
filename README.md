@@ -34,6 +34,8 @@ python3 -m pip install -r requirements-demo.txt
 python3 -m uvicorn sherlock.demos.app:app
 ```
 
+Our self-hosted server for the demo can be found at https://sherlock.loca.lt/ (NOTE: may not be running all the time)
+
 Prerequisites for the demo:
   * python >= 3.8
   * npm

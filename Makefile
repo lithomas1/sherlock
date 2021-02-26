@@ -17,6 +17,9 @@ format:
 
 dataset: data/fever/train.jsonl data/fever/wikidump
 
+host:
+	lt --port 8080 --subdomain sherlock
+
 data/fever/train.jsonl:
 	mkdir -p data/fever
 	$(download) -o data/fever/train.jsonl https://s3-eu-west-1.amazonaws.com/fever.public/train.jsonl
