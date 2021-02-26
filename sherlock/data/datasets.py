@@ -1,15 +1,16 @@
-from sherlock.data.wiki_parser import WikiParser
-from sherlock.data.util import tokenize_word
+import unicodedata
+import warnings
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
-from nltk.tokenize import sent_tokenize, word_tokenize
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import unicodedata
 import torch
+from nltk.tokenize import sent_tokenize, word_tokenize
 from torch.utils.data import Dataset
-import warnings
-from typing import Union, List, Tuple, Dict, Callable, Optional
+
+from sherlock.data.util import tokenize_word
+from sherlock.data.wiki_parser import WikiParser
 
 
 class FEVERDataset(Dataset):
@@ -21,7 +22,7 @@ class FEVERDataset(Dataset):
         train_file: Union[str, Path],
         tokenize: bool = True,
         pre_processor: Optional[Callable] = None,
-        sent_processor: Optional[Callable] = None
+        sent_processor: Optional[Callable] = None,
     ):
         """
 
@@ -50,7 +51,7 @@ class FEVERDataset(Dataset):
 
         pp = pre_processor if pre_processor else none_func
 
-        self._end_of_sentence = lambda : pp(torch.LongTensor([36]))
+        self._end_of_sentence = lambda: pp(torch.LongTensor([36]))
 
     def _sanitize_text(self, text: str) -> str:
         """
@@ -71,19 +72,21 @@ class FEVERDataset(Dataset):
 
                 # Accent removing
                 # ref https://tinyurl.com/3kae7p6r (Stack Overflow)
-                sent = unicodedata.normalize('NFKD', sent)
-                text[i] = u"".join([c for c in text if not unicodedata.combining(c)])
+                sent = unicodedata.normalize("NFKD", sent)
+                text[i] = "".join([c for c in text if not unicodedata.combining(c)])
         else:
             text = text.replace("-LRB-", "")
             text = text.replace("-LRB-", "")
             text = text.replace("-RRB-", "")
             # Accent removing (see comment above)
             text = unicodedata.normalize("NFKD", text)
-            text = u"".join([c for c in text if not unicodedata.combining(c)])
+            text = "".join([c for c in text if not unicodedata.combining(c)])
 
         return text
 
-    def _generate_sentence_labels(self, relevance: int, articles_dict: Dict[str, List[int]]) -> Tuple[List[str],np.ndarray]:
+    def _generate_sentence_labels(
+        self, relevance: int, articles_dict: Dict[str, List[int]]
+    ) -> Tuple[List[str], np.ndarray]:
         """
 
         :param relevance: int
@@ -104,11 +107,11 @@ class FEVERDataset(Dataset):
             except KeyError:
                 warnings.warn(
                     f"Bad article title ({article_title}) found in training data",
-                    RuntimeWarning)
+                    RuntimeWarning,
+                )
                 continue
             # article = sent_tokenize(self._sanitize_text(article))
-            article = list(map(word_tokenize,
-                           map(self._sanitize_text, entry.lines)))
+            article = list(map(word_tokenize, map(self._sanitize_text, entry.lines)))
             sentences += article
             labels = np.zeros(len(article))
             for num in sentence_nums:
@@ -150,7 +153,9 @@ class FEVERDataset(Dataset):
                 else:
                     articles_dict[article_title].add(int(sentence_num))
         # Generate labels
-        sentences, sentence_labels = self._generate_sentence_labels(relevance, articles_dict)
+        sentences, sentence_labels = self._generate_sentence_labels(
+            relevance, articles_dict
+        )
         if len(sentences) == 0:
             # Data is bad
             return None
@@ -158,7 +163,11 @@ class FEVERDataset(Dataset):
         claim = word_tokenize(claim)
         # Process claim (Assume is 1 sentence)
         if self.pre_processor is not None:
-            claim = [self.pre_processor(torch.LongTensor(tokenize_word(word))) for word in claim if word.isalnum()]
+            claim = [
+                self.pre_processor(torch.LongTensor(tokenize_word(word)))
+                for word in claim
+                if word.isalnum()
+            ]
         if self.sent_processor is not None:
             claim = self.sent_processor(torch.cat(claim).unsqueeze(0)).squeeze(0)
         # Process sentence
@@ -179,7 +188,9 @@ class FEVERDataset(Dataset):
             if not to_append:
                 continue
             if self.sent_processor is not None:
-                to_append = self.sent_processor(torch.cat(to_append).unsqueeze(0)).squeeze(0)
+                to_append = self.sent_processor(
+                    torch.cat(to_append).unsqueeze(0)
+                ).squeeze(0)
             sentences[i] = to_append
 
         sentence_labels = np.concatenate(sentence_labels)

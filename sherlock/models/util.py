@@ -12,5 +12,5 @@ def collate_with_none(batch):
     """
     batch = list(filter(lambda x: x is not None, batch))
     if len(batch) == 0:
-        return ([],[],[])
+        return ([], [], [])
     return default_collate(batch)

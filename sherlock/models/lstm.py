@@ -58,7 +58,9 @@ class LSTMModel(nn.Module):
         if len(words.shape) == 2:
             words = words.unsqueeze(0)
         # TODO: Explore alternative methods to mean (e.g. take first, take last, etc)
-        embeddings = torch.mean(self.word_lstm(words)[0], dim=1)  # We want output not hidden layers
+        embeddings = torch.mean(
+            self.word_lstm(words)[0], dim=1
+        )  # We want output not hidden layers
         return embeddings
 
     def embed_sentence(self, sentence: torch.Tensor):
@@ -83,6 +85,6 @@ class LSTMModel(nn.Module):
             Relevancy - 0 No relation, 1 Supports, 2 Refutes
 
         """
-        combined = torch.cat([x,y]).unsqueeze(0)
-        combined = combined.permute(0, 2, 1) # This is bad but I have no choice :(
+        combined = torch.cat([x, y]).unsqueeze(0)
+        combined = combined.permute(0, 2, 1)  # This is bad but I have no choice :(
         return self.dense(torch.mean(self.lstm1(combined)[0], dim=1))

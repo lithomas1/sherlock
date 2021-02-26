@@ -1,5 +1,6 @@
 from typing import List
 
+
 def tokenize_word(word: str) -> List[int]:
     """
     Maps each character in word to integer tokens.
@@ -20,7 +21,7 @@ def tokenize_word(word: str) -> List[int]:
     for char in word:
         if char.isnumeric():
             tokens.append(int(char))
-        elif char.isalpha() and char.isascii(): # Have to check for english :(
+        elif char.isalpha() and char.isascii():  # Have to check for english :(
             idx = ord(char) - 97 + 10  # 97 is ASCII 'a'
             tokens.append(idx)
         else:
