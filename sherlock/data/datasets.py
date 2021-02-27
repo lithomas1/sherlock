@@ -44,6 +44,12 @@ class FEVERDataset(Dataset):
         self.train_dataset = self.train_dataset[
             self.train_dataset["verifiable"] == "VERIFIABLE"
         ]
+        
+        # Balance data
+        # see https://stackoverflow.com/questions/45839316/pandas-balancing-data
+        g = self.train_dataset.groupby("label")
+        self.train_dataset = g.apply(lambda x: x.sample(g.size().min()).reset_index(drop=True))
+
         self.tokenize = tokenize
         none_func = lambda *args, **kwargs: None
         self.pre_processor = pre_processor
