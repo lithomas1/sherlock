@@ -11,6 +11,7 @@ import torch.optim as optim
 from nltk.tokenize import word_tokenize
 from torch.utils.data import DataLoader
 
+from sherlock.conf import device
 from sherlock.data.datasets import FEVERDataset
 from sherlock.models.lstm import LSTMModel
 from sherlock.models.util import collate_with_none
@@ -24,13 +25,11 @@ if "sherlock" not in {os.getcwd().split("\\")[-1], os.getcwd().split("/")[-1]}:
         "Please run this script from the base directory as python scripts/train.py"
     )
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
 # Config parameters
 seed = 42
 num_workers = 0
 batch_size = 1  # debugging
-model = LSTMModel().train().to(device).set_device(device)
+model = LSTMModel().train().to(device)
 lr = 1e-3
 sample_ratio = np.array([0.5, 1, 1])
 
