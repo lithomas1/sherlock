@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import sherlock.conf as conf
 from sherlock.data.util import tokenize_word
 
 
@@ -53,7 +54,7 @@ class LSTMModel(nn.Module):
         else:
             # Is list of list of tokens
             words = torch.LongTensor(words)
-        words = self.char_embeds(words)
+        words = self.char_embeds(words.to(conf.device))
         # Check batch
         if len(words.shape) == 2:
             words = words.unsqueeze(0)

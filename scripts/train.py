@@ -11,6 +11,7 @@ import torch.optim as optim
 from nltk.tokenize import word_tokenize
 from torch.utils.data import DataLoader
 
+from sherlock.conf import device
 from sherlock.data.datasets import FEVERDataset
 from sherlock.models.lstm import LSTMModel
 from sherlock.models.util import collate_with_none
@@ -23,11 +24,12 @@ if "sherlock" not in {os.getcwd().split("\\")[-1], os.getcwd().split("/")[-1]}:
     raise RuntimeError(
         "Please run this script from the base directory as python scripts/train.py"
     )
+
 # Config parameters
 seed = 42
 num_workers = 0
 batch_size = 1  # debugging
-model = LSTMModel().train()
+model = LSTMModel().train().to(device)
 lr = 1e-3
 sample_ratio = np.array([0.5, 1, 1])
 
@@ -93,11 +95,15 @@ for claims, sentences_batch, sentence_labels in dataloader:
 
     criterion = nn.CrossEntropyLoss()
 
+    claims = claims.to(device)
+    sentence_labels = sentence_labels.to(device)
+
     # Generate predictions
     preds = []
     for sentences in sentences_batch:
         article_preds = []
         for sentence in sentences:
+            sentence = sentence.to(device)
             article_preds.append(model(claims, sentence.unsqueeze(0)))
         preds.append(torch.cat(article_preds))
     preds = torch.cat(preds)
