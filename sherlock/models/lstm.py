@@ -9,7 +9,7 @@ from sherlock.data.util import tokenize_word
 class LSTMModel(nn.Module):
     """ A simple LSTM Model for Natural Language Inference"""
 
-    def __init__(self, char_embeds_size=10, word_embeds_size=20, sent_embeds_size=30):
+    def __init__(self, char_embeds_size=10, word_embeds_size=20, sent_embeds_size=10):
         """
 
         :param char_embeds_size: int, default 10
@@ -63,6 +63,8 @@ class LSTMModel(nn.Module):
         embeddings = torch.mean(
             self.word_lstm(words)[0], dim=1
         )  # We want output not hidden layers
+        #embeddings = self.word_lstm(words)[0][:, -1, :]
+
         return embeddings
 
     def embed_sentence(self, sentence: torch.Tensor):
@@ -73,8 +75,9 @@ class LSTMModel(nn.Module):
             Batch first Tensor of word embeddings
         :return: torch.Tensor[sent_embeds_size]
         """
-        #print(sentence)
-        return torch.mean(self.sentence_lstm(sentence)[0], dim=1)
+        #print(self.sentence_lstm(sentence)[0])
+        #print(self.sentence_lstm(sentence)[0].shape)
+        return torch.sum(self.sentence_lstm(sentence)[0], dim=1)
         #return self.sentence_lstm(sentence)[0][:, -1, :]
 
     def forward(self, x, y):

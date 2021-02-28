@@ -175,7 +175,7 @@ class FEVERDataset(Dataset):
                 if word.isalnum()
             ]
         if self.sent_processor is not None:
-            claim = self.sent_processor(torch.cat(claim).unsqueeze(0)).squeeze(0)
+            claim = self.sent_processor(torch.cat(claim).unsqueeze(0))
         # Process sentence
         word_process = self.pre_processor is not None or self.tokenize
         for i, sentence in enumerate(sentences):
@@ -189,15 +189,13 @@ class FEVERDataset(Dataset):
                             tokens = torch.LongTensor(tokenize_word(word))
                         if self.pre_processor is not None:
                             tokens = self.pre_processor(tokens)
-                        to_append.append(tokens)
+                            to_append.append(tokens)
                 if len(to_append) == 0:
                     # Ideally we shouldn't hit this, but whatever
                     to_append.append(self._nan_char())
             if not to_append:
                 continue
             if self.sent_processor is not None:
-                print(len(to_append))
-                print(to_append[0].shape)
                 to_append = self.sent_processor(
                     torch.cat(to_append).unsqueeze(0)
                 )
@@ -207,5 +205,5 @@ class FEVERDataset(Dataset):
         return claim, sentences, sentence_labels
 
     def __len__(self) -> int:
-        #return len(self.train_dataset)
-        return 1
+        return len(self.train_dataset)
+        #return 1

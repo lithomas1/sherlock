@@ -30,7 +30,7 @@ seed = 42
 num_workers = 0
 batch_size = 1  # debugging
 model = LSTMModel().train().to(device)
-lr = 1e-10
+lr = 1e-3
 epochs = 1000
 sample_ratio = np.array([0.5, 1, 1])
 
@@ -90,6 +90,7 @@ for epoch in range(epochs):
 
         # Reshaping inputs
         claims = claims.squeeze(1)  # new size (1,100), assume single sentence
+        #print(claims)
         sampled_idxs = over_sample(probs, n_samples=len(probs))
         sentences_batch = torch.cat(sentences_batch, dim=1)
         sentences_batch = sentences_batch[:, sampled_idxs, :]
@@ -111,8 +112,8 @@ for epoch in range(epochs):
         ].to(device)
 
         loss = criterion(preds, sentence_labels)
-        #loss.backward()
-        #optim.step()
+        loss.backward()
+        optim.step()
 
         print(F.softmax(preds))
         print("Predictions:", *map(max_pred, preds))
