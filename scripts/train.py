@@ -108,7 +108,7 @@ for epoch in range(epochs):
         # TODO: do this in datasets.py
         sentence_labels = torch.flatten(sentence_labels, start_dim=0, end_dim=1).long()[
             sampled_idxs
-        ]
+        ].to(device)
 
         loss = criterion(preds, sentence_labels)
         #loss.backward()
