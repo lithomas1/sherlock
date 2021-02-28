@@ -44,7 +44,7 @@ class FEVERDataset(Dataset):
         self.train_dataset = self.train_dataset[
             self.train_dataset["verifiable"] == "VERIFIABLE"
         ]
-        
+
         # Balance data
         # see https://stackoverflow.com/questions/45839316/pandas-balancing-data
         g = self.train_dataset.groupby("label")
@@ -57,7 +57,7 @@ class FEVERDataset(Dataset):
 
         pp = pre_processor if pre_processor else none_func
 
-        self._end_of_sentence = lambda: pp(torch.LongTensor([36]))
+        self._nan_char = lambda: pp(torch.LongTensor([36]))
 
     def _sanitize_text(self, text: str) -> str:
         """
@@ -190,17 +190,22 @@ class FEVERDataset(Dataset):
                         if self.pre_processor is not None:
                             tokens = self.pre_processor(tokens)
                         to_append.append(tokens)
-            to_append.append(self._end_of_sentence())
+                if len(to_append) == 0:
+                    # Ideally we shouldn't hit this, but whatever
+                    to_append.append(self._nan_char())
             if not to_append:
                 continue
             if self.sent_processor is not None:
+                print(len(to_append))
+                print(to_append[0].shape)
                 to_append = self.sent_processor(
                     torch.cat(to_append).unsqueeze(0)
-                ).squeeze(0)
+                )
             sentences[i] = to_append
 
         sentence_labels = np.concatenate(sentence_labels)
         return claim, sentences, sentence_labels
 
     def __len__(self) -> int:
-        return len(self.train_dataset)
+        #return len(self.train_dataset)
+        return 1

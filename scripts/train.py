@@ -30,7 +30,8 @@ seed = 42
 num_workers = 0
 batch_size = 1  # debugging
 model = LSTMModel().train().to(device)
-lr = 1e-3
+lr = 1e-10
+epochs = 1000
 sample_ratio = np.array([0.5, 1, 1])
 
 # Seed for reproducibility
@@ -68,56 +69,53 @@ def max_pred(x):
 def over_sample(probs, n_samples):
     return np.random.choice(np.arange(0, len(probs)), n_samples, replace=True, p=probs)
 
+for epoch in range(epochs):
+    for claims, sentences_batch, sentence_labels in dataloader:
 
-for claims, sentences_batch, sentence_labels in dataloader:
+        # Check for totally corrupted data
+        if len(claims) == 0:
+            continue
 
-    # Check for totally corrupted data
-    if len(claims) == 0:
-        continue
+        optim.zero_grad()
 
-    optim.zero_grad()
+        # Balancing classes with weighted loss
+        probs = np.zeros(sentence_labels.shape[1])  # TODO: fix for multi size batch
+        class_weights = torch.zeros(3)
+        for i in range(3):
+            for sentence_label in sentence_labels:
+                mask = sentence_label == i
+                class_weights[i] = np.count_nonzero(mask)
+                probs[mask] = (len(probs) / (3 * class_weights[i])) * sample_ratio[i]
+        probs = probs / probs.sum()  # normalize probabilities
 
-    # Balancing classes with weighted loss
-    probs = np.zeros(sentence_labels.shape[1])  # TODO: fix for multi size batch
-    class_weights = torch.zeros(3)
-    for i in range(3):
-        for sentence_label in sentence_labels:
-            mask = sentence_label == i
-            class_weights[i] = np.count_nonzero(mask)
-            probs[mask] = (len(probs) / (3 * class_weights[i])) * sample_ratio[i]
-    probs = probs / probs.sum()  # normalize probabilities
+        # Reshaping inputs
+        claims = claims.squeeze(1)  # new size (1,100), assume single sentence
+        sampled_idxs = over_sample(probs, n_samples=len(probs))
+        sentences_batch = torch.cat(sentences_batch, dim=1)
+        sentences_batch = sentences_batch[:, sampled_idxs, :]
 
-    # Reshaping inputs
-    claims = claims.squeeze(1)  # new size (1,100), assume single sentence
-    sampled_idxs = over_sample(probs, n_samples=len(probs))
-    sentences_batch = torch.cat(sentences_batch, dim=1)
-    sentences_batch = sentences_batch[:, sampled_idxs, :]
+        criterion = nn.CrossEntropyLoss()
 
-    criterion = nn.CrossEntropyLoss()
+        # Generate predictions
+        preds = []
+        for sentences in sentences_batch:
+            article_preds = []
+            for sentence in sentences:
+                #print(sentence)
+                article_preds.append(model(claims, sentence.unsqueeze(0)))
+            preds.append(torch.cat(article_preds))
+        preds = torch.cat(preds)
+        # TODO: do this in datasets.py
+        sentence_labels = torch.flatten(sentence_labels, start_dim=0, end_dim=1).long()[
+            sampled_idxs
+        ]
 
-    claims = claims.to(device)
-    sentence_labels = sentence_labels.to(device)
+        loss = criterion(preds, sentence_labels)
+        #loss.backward()
+        #optim.step()
 
-    # Generate predictions
-    preds = []
-    for sentences in sentences_batch:
-        article_preds = []
-        for sentence in sentences:
-            sentence = sentence.to(device)
-            article_preds.append(model(claims, sentence.unsqueeze(0)))
-        preds.append(torch.cat(article_preds))
-    preds = torch.cat(preds)
-    # TODO: do this in datasets.py
-    sentence_labels = torch.flatten(sentence_labels, start_dim=0, end_dim=1).long()[
-        sampled_idxs
-    ]
-
-    loss = criterion(preds, sentence_labels)
-    loss.backward()
-    optim.step()
-
-    print(F.softmax(preds))
-    print("Predictions:", *map(max_pred, preds))
-    print("Labels:     ", *map(int, sentence_labels))
-    print("Loss:       ", loss.item())
-    print()
+        print(F.softmax(preds))
+        print("Predictions:", *map(max_pred, preds))
+        print("Labels:     ", *map(int, sentence_labels))
+        print("Loss:       ", loss.item())
+        print()
