@@ -32,6 +32,15 @@ batch_size = 1  # debugging
 model = LSTMModel().train().to(device)
 lr = 1e-3
 sample_ratio = np.array([0.5, 1, 1])
+model_path = "checkpoints/{}/model.pt"
+optimizer_path = "checkpoints/{}/adam.pt"
+try:
+    checkpoints = sorted(map(int, os.listdir("checkpoints")))
+    c_num = len(checkpoints)
+except FileNotFoundError:
+    os.mkdir("checkpoints")
+    checkpoints = []
+    c_num = 0
 
 # Seed for reproducibility
 if seed is not None:
@@ -56,6 +65,16 @@ dataloader = DataLoader(
 
 optim = optim.Adam(model.parameters(), lr=lr)
 
+if c_num:
+    model.load_state_dict(model_path.format(checkpoints[-1]))
+    optim.load_state_dict(optimizer_path.format(checkpoints[-1]))
+
+def save_checkpoint():
+    global c_num
+    c_num += 1
+    os.mkdir(f"checkpoints/{c_num}")
+    torch.save(model.state_dict(), model_path.format(c_num))
+    torch.save(optim.state_dict(), optimizer_path.format(c_num))
 
 def max_pred(x):
     x = list(map(float, x))
