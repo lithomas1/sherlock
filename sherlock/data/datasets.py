@@ -49,6 +49,8 @@ class FEVERDataset(Dataset):
         # see https://stackoverflow.com/questions/45839316/pandas-balancing-data
         g = self.train_dataset.groupby("label")
         self.train_dataset = g.apply(lambda x: x.sample(g.size().min()).reset_index(drop=True))
+        self.train_dataset = self.train_dataset.reset_index(drop=True)
+        self.train_dataset = self.train_dataset.sample(frac=1).reset_index(drop=True)
 
         self.tokenize = tokenize
         none_func = lambda *args, **kwargs: None
@@ -206,4 +208,4 @@ class FEVERDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.train_dataset)
-        #return 1
+        #return 100
