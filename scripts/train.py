@@ -30,7 +30,7 @@ seed = 42
 num_workers = 0
 batch_size = 1  # debugging
 model = LSTMModel().train().to(device)
-lr = 1e-3
+lr = 5e-3
 epochs = 1000
 sample_ratio = np.array([0.5, 1, 1])
 model_path = "checkpoints/{}/model.pt"
@@ -104,7 +104,7 @@ def over_sample(probs, n_samples):
 for epoch in range(epochs):
     c_num += 1
     try:
-        for claims, sentences_batch, sentence_labels in dataloader:
+        for i, (claims, sentences_batch, sentence_labels) in enumerate(dataloader, 1):
 
             # Check for totally corrupted data
             if len(claims) == 0:
@@ -154,8 +154,15 @@ for epoch in range(epochs):
             print("Labels:     ", *map(int, sentence_labels))
             print("Loss:       ", loss.item())
             print()
+
+            p_v = list(map(max_pred, preds))
+            p_l = list(map(int, sentence_labels))
             log(loss.item(), name="loss")
-            log(F.softmax(preds), name="preds")
-            log(*map(int, sentence_labels), name="labels")
+            log(*p_v, name="preds")
+            log(*p_l, name="labels")
+            log(sum(v == l for v, l in zip(p_v, p_l)) / len(p_v), name="accuracy")
+            if i % 1000 == 0:
+                save_checkpoint()
+                c_num += 1
     finally:
         save_checkpoint()
