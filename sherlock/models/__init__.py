@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from nltk import sent_tokenize, word_tokenize
 
-from sherlock.data.util import tokenize_word
+from sherlock.data.util import sanitize_text, tokenize_word
 import unicodedata
 import numpy as np
 
@@ -37,38 +37,6 @@ class BaseModel(nn.Module):
     def forward(self, x, y):
         pass
 
-    def _sanitize_text(self, text: str) -> str:
-        # TODO: de-dup with the other one
-        """
-        Normalizes words and removes strange artifacts from the FEVER Dataset
-
-        Currently removes accents and useless '-LRB-' and '-RRB' tags
-
-        :param text: str or List[str]
-            Text to sanitize
-        :return: str
-            Sanitized text.
-        """
-        if isinstance(text, list):
-            for i, sent in enumerate(text):
-                sent = sent.replace("-LRB-", "")
-                sent = sent.replace("-LSB-", "")
-                sent = sent.replace("-RRB-", "")
-
-                # Accent removing
-                # ref https://tinyurl.com/3kae7p6r (Stack Overflow)
-                sent = unicodedata.normalize("NFKD", sent)
-                text[i] = "".join([c for c in text if not unicodedata.combining(c)])
-        else:
-            text = text.replace("-LRB-", "")
-            text = text.replace("-LRB-", "")
-            text = text.replace("-RRB-", "")
-            # Accent removing (see comment above)
-            text = unicodedata.normalize("NFKD", text)
-            text = "".join([c for c in text if not unicodedata.combining(c)])
-
-        return text
-
     def verify(self, claim: str, article: str, k: int) -> Verification:
         """
 
@@ -91,6 +59,7 @@ class BaseModel(nn.Module):
         claim = self.embed_sentence(torch.cat(claim).unsqueeze(0)).squeeze(0)
         preds_list = []
         for sentence in article:
+            sentence = sanitize_text(sentence)
             sentence = word_tokenize(sentence)
             sentence = [
                 self.embed_words(torch.LongTensor(tokenize_word(word)))

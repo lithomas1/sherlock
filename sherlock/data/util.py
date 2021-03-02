@@ -1,4 +1,5 @@
 from typing import List
+import unicodedata
 
 
 def tokenize_word(word: str) -> List[int]:
@@ -28,3 +29,36 @@ def tokenize_word(word: str) -> List[int]:
             tokens.append(36)
 
     return tokens
+
+
+def sanitize_text(text: str) -> str:
+
+    """
+    Normalizes words and removes strange artifacts from the FEVER Dataset
+
+    Currently removes accents and useless '-LRB-' and '-RRB' tags
+
+    :param text: str or List[str]
+        Text to sanitize
+    :return: str
+        Sanitized text.
+    """
+    if isinstance(text, list):
+        for i, sent in enumerate(text):
+            sent = sent.replace("-LRB-", "")
+            sent = sent.replace("-LSB-", "")
+            sent = sent.replace("-RRB-", "")
+
+            # Accent removing
+            # ref https://tinyurl.com/3kae7p6r (Stack Overflow)
+            sent = unicodedata.normalize("NFKD", sent)
+            text[i] = "".join([c for c in text if not unicodedata.combining(c)])
+    else:
+        text = text.replace("-LRB-", "")
+        text = text.replace("-LRB-", "")
+        text = text.replace("-RRB-", "")
+        # Accent removing (see comment above)
+        text = unicodedata.normalize("NFKD", text)
+        text = "".join([c for c in text if not unicodedata.combining(c)])
+
+    return text

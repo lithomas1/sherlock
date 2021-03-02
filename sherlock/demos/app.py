@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import sherlock.demos.twitter as tw
-from sherlock.models import DummyVerifier, Verification, Verifier
+from sherlock.models import BaseModel, Verification, Verifier
 
 public = Path(__file__).parent / "client/public"
 
