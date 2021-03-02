@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from typing import NamedTuple, Protocol, List
+from typing import NamedTuple, List
 import torch
 import torch.nn as nn
 from nltk import sent_tokenize, word_tokenize
 
 from sherlock.data.util import sanitize_text, tokenize_word
-import unicodedata
 import numpy as np
 
 
@@ -18,11 +17,6 @@ class FactCheck(NamedTuple):
 class Verification:
     agree: List[FactCheck]
     disagree: List[FactCheck]
-
-
-class Verifier(Protocol):
-    def verify(self, claim: str) -> Verification:
-        ...
 
 
 class BaseModel(nn.Module):
