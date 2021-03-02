@@ -14,7 +14,8 @@ app.mount("/public", StaticFiles(directory=f"{public}"), name="pub")
 
 @app.on_event("startup")
 def create_verifier() -> None:
-    app.verifier: Verifier = DummyVerifier()
+    # TODO: Load dataset
+    app.verifier: Verifier = BaseModel()
 
 @app.get("/verify", response_model=Verification)
 def verify(claim: str):
