@@ -71,8 +71,8 @@ class BaseModel(nn.Module):
 
         preds_list = np.stack(preds_list)
 
-        agree_idxs = preds_list[1].argsort()[:k]
-        disagree_idxs = preds_list[2].argsort()[:k]
+        agree_idxs = preds_list[1].argsort()[:k][::-1]
+        disagree_idxs = preds_list[2].argsort()[:k][::-1]
 
         return Verification(
             agree=[
