@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import NamedTuple, List, Union
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from sherlock.conf import device
 from nltk import sent_tokenize, word_tokenize
 from operator import attrgetter
 import functools
@@ -26,6 +28,7 @@ class Verification:
 class BaseModel(nn.Module):
     true = Politifact(True)[:50]
     false = Politifact(False)[:50]
+    model_path = (Path(__file__).parent / "../../models/model.pt").resolve()
 
     # TODO: maybe make the python equivalent of abstract class
     # __init__ defined by subclass
@@ -37,6 +40,12 @@ class BaseModel(nn.Module):
 
     def forward(self, x, y):
         ...
+
+    def sherlock_load(self):
+        if self.model_path.exists():
+            self.load_state_dict(torch.load(str(self.model_path), map_location=device))
+        else:
+            print("[WARNING]", f"no model found at {self.model_path}")
 
     def verify(self, claim: str) -> Verification:
         get_claims = lambda pol: [p.claim for p in pol]

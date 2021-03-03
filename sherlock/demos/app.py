@@ -17,6 +17,7 @@ app.mount("/public", StaticFiles(directory=f"{public}"), name="pub")
 def create_verifier() -> None:
     # TODO: Load dataset
     app.verifier: BaseModel = LSTMModel().eval()
+    app.verifier.sherlock_load()
 
 @app.get("/verify", response_model=Verification)
 def verify(claim: str):
