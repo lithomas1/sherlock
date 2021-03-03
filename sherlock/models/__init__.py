@@ -39,16 +39,22 @@ class BaseModel(nn.Module):
         ...
 
     def verify(self, claim: str) -> Verification:
-        article = [a.claim for a in self.true]
-        return self.__raw_verify(claim, article, 3)
-        # get_claims = lambda pol: [p.claim for p in pol]
-        # true = self.__raw_verify(claim, get_claims(self.true), 3)
-        # false = self.__raw_verify(claim, get_claims(self.false), 3)
-        # sort = functools.partial(sorted, key=attrgetter("strength"))
-        # return Verification(
-        #     agree=sort(true.agree + false.disagree),
-        #     disagree=sort(true.disagree + false.agree),
-        # )
+        get_claims = lambda pol: [p.claim for p in pol]
+        true = self.__raw_verify(claim, get_claims(self.true), 3)
+        false = self.__raw_verify(claim, get_claims(self.false), 3)
+        sort = functools.partial(
+            sorted,
+            key=attrgetter("strength"),
+            reverse=True
+        )
+
+        # TODO: consider whether to remove false.disagree
+        # We don't use false.disagree since a lot of the false claims
+        # are crazy and denial of them means nothing
+        return Verification(
+            agree=sort(true.agree + false.disagree)[:3],
+            disagree=sort(true.disagree + false.agree)[:3],
+        )
 
     def __raw_verify(self, claim: str, article: Union[str, List[str]], k: int) -> Verification:
         """
@@ -84,16 +90,18 @@ class BaseModel(nn.Module):
 
         preds_list = np.stack(preds_list)
 
-        agree_idxs = preds_list[1].argsort()[:k][::-1][0]
-        disagree_idxs = preds_list[2].argsort()[:k][::-1][0]
+        l = len(preds_list)
+        sort = functools.partial(sorted, range(l), reverse=True)
+        agree_idxs = sort(key=lambda x: preds_list[x][0][1])[:k]
+        disagree_idxs = sort(key=lambda x: preds_list[x][0][2])[:k]
 
         return Verification(
             agree=[
-                FactCheck(article[idx], float(preds_list[1][0][idx]))
+                FactCheck(article[idx], float(preds_list[idx][0][1]))
                 for idx in agree_idxs
             ],
             disagree=[
-                FactCheck(article[idx], float(preds_list[2][0][idx]))
+                FactCheck(article[idx], float(preds_list[idx][0][2]))
                 for idx in disagree_idxs
             ]
         )

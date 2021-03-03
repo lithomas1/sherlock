@@ -13,7 +13,6 @@
     const verification = await getVerification(claim);
     agree = verification.agree;
     disagree = verification.disagree;
-    console.log("VERIFYING");
   })(claim);
 
 </script>
