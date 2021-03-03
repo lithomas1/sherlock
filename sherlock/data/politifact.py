@@ -41,7 +41,7 @@ class Politifact(List[PolFactCheck]):
         if correct:
             path = self.__DIR / "recent_true.json"
         else:
-            path = self.__DIR / "recent_pants_fire.json"
+            path = self.__DIR / "recent_false.json"
         self._path = path
         self._correct = correct
 

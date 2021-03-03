@@ -5,27 +5,23 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import sherlock.demos.twitter as tw
+from sherlock.models import BaseModel, Verification
+from sherlock.models.lstm import LSTMModel
 
 public = Path(__file__).parent / "client/public"
 
 app = FastAPI()
 app.mount("/public", StaticFiles(directory=f"{public}"), name="pub")
 
+@app.on_event("startup")
+def create_verifier() -> None:
+    # TODO: Load dataset
+    app.verifier: BaseModel = LSTMModel().eval()
+    app.verifier.sherlock_load()
 
-@app.get("/verify")
+@app.get("/verify", response_model=Verification)
 def verify(claim: str):
-    return {
-        "agree": [
-            ("the left something", 0.987),
-            ("the right something", 0.912),
-            ("another agree", 0.812),
-        ],
-        "disagree": [
-            ("a based wiki article", 0.912),
-            ("another based article", 0.71),
-            ("yippee another", 0.61),
-        ],
-    }
+    return app.verifier.verify(claim)
 
 
 @app.get("/claims")

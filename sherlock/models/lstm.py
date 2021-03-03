@@ -4,9 +4,10 @@ import torch.nn.functional as F
 
 import sherlock.conf as conf
 from sherlock.data.util import tokenize_word
+from sherlock.models import BaseModel
 
 
-class LSTMModel(nn.Module):
+class LSTMModel(BaseModel):
     """ A simple LSTM Model for Natural Language Inference"""
 
     def __init__(self, char_embeds_size=10, word_embeds_size=20, sent_embeds_size=10):

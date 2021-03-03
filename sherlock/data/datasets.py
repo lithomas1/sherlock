@@ -1,4 +1,3 @@
-import unicodedata
 import warnings
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple, Union
@@ -9,7 +8,7 @@ import torch
 from nltk.tokenize import sent_tokenize, word_tokenize
 from torch.utils.data import Dataset
 
-from sherlock.data.util import tokenize_word
+from sherlock.data.util import sanitize_text, tokenize_word
 from sherlock.data.wiki_parser import WikiParser
 
 
@@ -59,37 +58,6 @@ class FEVERDataset(Dataset):
 
         self._nan_char = lambda: pp(torch.LongTensor([36]))
 
-    def _sanitize_text(self, text: str) -> str:
-        """
-        Normalizes words and removes strange artifacts from the FEVER Dataset
-
-        Currently removes accents and useless '-LRB-' and '-RRB' tags
-
-        :param text: str or List[str]
-            Text to sanitize
-        :return: str
-            Sanitized text.
-        """
-        if isinstance(text, list):
-            for i, sent in enumerate(text):
-                sent = sent.replace("-LRB-", "")
-                sent = sent.replace("-LSB-", "")
-                sent = sent.replace("-RRB-", "")
-
-                # Accent removing
-                # ref https://tinyurl.com/3kae7p6r (Stack Overflow)
-                sent = unicodedata.normalize("NFKD", sent)
-                text[i] = "".join([c for c in text if not unicodedata.combining(c)])
-        else:
-            text = text.replace("-LRB-", "")
-            text = text.replace("-LRB-", "")
-            text = text.replace("-RRB-", "")
-            # Accent removing (see comment above)
-            text = unicodedata.normalize("NFKD", text)
-            text = "".join([c for c in text if not unicodedata.combining(c)])
-
-        return text
-
     def _generate_sentence_labels(
         self, relevance: int, articles_dict: Dict[str, List[int]]
     ) -> Tuple[List[str], np.ndarray]:
@@ -117,7 +85,7 @@ class FEVERDataset(Dataset):
                 )
                 continue
             # article = sent_tokenize(self._sanitize_text(article))
-            article = list(map(word_tokenize, map(self._sanitize_text, entry.lines)))
+            article = list(map(word_tokenize, map(sanitize_text, entry.lines)))
             sentences += article
             labels = np.zeros(len(article))
             for num in sentence_nums:

@@ -18,6 +18,7 @@ format:
 dataset: data/fever/train.jsonl data/fever/wikidump
 
 host:
+	$(py) -m uvicorn sherlock.demos.app:app --port=8080 --reload &
 	lt --port 8080 --subdomain sherlock
 
 data/fever/train.jsonl:
