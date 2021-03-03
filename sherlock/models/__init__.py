@@ -48,7 +48,7 @@ class BaseModel(nn.Module):
             print("[WARNING]", f"no model found at {self.model_path}")
 
     def verify(self, claim: str) -> Verification:
-        get_claims = lambda pol: [p.claim for p in pol]
+        get_claims = lambda pol: [p.claim[:99] for p in pol]
         true = self.__raw_verify(claim, get_claims(self.true), 3)
         false = self.__raw_verify(claim, get_claims(self.false), 3)
         sort = functools.partial(
@@ -84,7 +84,7 @@ class BaseModel(nn.Module):
             for word in claim
             if word.isalnum()
         ]
-        claim = self.embed_sentence(torch.cat(claim).unsqueeze(0)).squeeze(0)
+        claim = self.embed_sentence(torch.cat(claim).unsqueeze(0)).squeeze(1)
         preds_list = []
         for sentence in article:
             sentence = sanitize_text(sentence)
@@ -94,7 +94,7 @@ class BaseModel(nn.Module):
                 for word in sentence
                 if word.isalnum()
             ]
-            sentence = self.embed_sentence(torch.cat(sentence).unsqueeze(0)).squeeze(0)
+            sentence = self.embed_sentence(torch.cat(sentence).unsqueeze(0)).squeeze(1)
             preds_list.append(F.softmax(self(claim, sentence)).detach())
 
         preds_list = np.stack(preds_list)
