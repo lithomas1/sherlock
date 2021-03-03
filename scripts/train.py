@@ -30,8 +30,19 @@ seed = 42
 num_workers = 0
 batch_size = 1  # debugging
 model = LSTMModel().train().to(device)
-lr = 1e-3
+lr = 5e-3
+epochs = 1000
 sample_ratio = np.array([0.5, 1, 1])
+model_path = "checkpoints/{}/model.pt"
+optimizer_path = "checkpoints/{}/adam.pt"
+log_path = "checkpoints/{num}/{name}.log"
+try:
+    checkpoints = sorted(map(int, os.listdir("checkpoints")))
+    c_num = len(checkpoints)
+except FileNotFoundError:
+    os.mkdir("checkpoints")
+    checkpoints = []
+    c_num = 0
 
 # Seed for reproducibility
 if seed is not None:
@@ -56,6 +67,28 @@ dataloader = DataLoader(
 
 optim = optim.Adam(model.parameters(), lr=lr)
 
+if c_num:
+    model.load_state_dict(torch.load(model_path.format(checkpoints[-1])))
+    optim.load_state_dict(torch.load(optimizer_path.format(checkpoints[-1])))
+
+def init_checkpoint_dir(func):
+    def inner(*args, **kwargs):
+        try:
+            os.mkdir(f"checkpoints/{c_num}")
+        except FileExistsError:
+            pass
+        return func(*args, **kwargs)
+    return inner
+
+@init_checkpoint_dir
+def save_checkpoint():
+    torch.save(model.state_dict(), model_path.format(c_num))
+    torch.save(optim.state_dict(), optimizer_path.format(c_num))
+
+@init_checkpoint_dir
+def log(*args, name, **kwargs):
+    with open(log_path.format(name=name, num=c_num), "a+") as fout:
+        return print(*args, **kwargs, file=fout)
 
 def max_pred(x):
     x = list(map(float, x))
@@ -68,56 +101,68 @@ def max_pred(x):
 def over_sample(probs, n_samples):
     return np.random.choice(np.arange(0, len(probs)), n_samples, replace=True, p=probs)
 
+for epoch in range(epochs):
+    c_num += 1
+    try:
+        for d_i, (claims, sentences_batch, sentence_labels) in enumerate(dataloader, 1):
 
-for claims, sentences_batch, sentence_labels in dataloader:
+            # Check for totally corrupted data
+            if len(claims) == 0:
+                continue
 
-    # Check for totally corrupted data
-    if len(claims) == 0:
-        continue
+            optim.zero_grad()
 
-    optim.zero_grad()
+            # Balancing classes with weighted loss
+            probs = np.zeros(sentence_labels.shape[1])  # TODO: fix for multi size batch
+            class_weights = torch.zeros(3)
+            for i in range(3):
+                for sentence_label in sentence_labels:
+                    mask = sentence_label == i
+                    class_weights[i] = np.count_nonzero(mask)
+                    probs[mask] = (len(probs) / (3 * class_weights[i])) * sample_ratio[i]
+            probs = probs / probs.sum()  # normalize probabilities
 
-    # Balancing classes with weighted loss
-    probs = np.zeros(sentence_labels.shape[1])  # TODO: fix for multi size batch
-    class_weights = torch.zeros(3)
-    for i in range(3):
-        for sentence_label in sentence_labels:
-            mask = sentence_label == i
-            class_weights[i] = np.count_nonzero(mask)
-            probs[mask] = (len(probs) / (3 * class_weights[i])) * sample_ratio[i]
-    probs = probs / probs.sum()  # normalize probabilities
+            # Reshaping inputs
+            claims = claims.squeeze(1)  # new size (1,100), assume single sentence
+            #print(claims)
+            sampled_idxs = over_sample(probs, n_samples=len(probs))
+            sentences_batch = torch.cat(sentences_batch, dim=1)
+            sentences_batch = sentences_batch[:, sampled_idxs, :]
 
-    # Reshaping inputs
-    claims = claims.squeeze(1)  # new size (1,100), assume single sentence
-    sampled_idxs = over_sample(probs, n_samples=len(probs))
-    sentences_batch = torch.cat(sentences_batch, dim=1)
-    sentences_batch = sentences_batch[:, sampled_idxs, :]
+            criterion = nn.CrossEntropyLoss()
 
-    criterion = nn.CrossEntropyLoss()
+            # Generate predictions
+            preds = []
+            for sentences in sentences_batch:
+                article_preds = []
+                for sentence in sentences:
+                    #print(sentence)
+                    article_preds.append(model(claims, sentence.unsqueeze(0)))
+                preds.append(torch.cat(article_preds))
+            preds = torch.cat(preds)
+            # TODO: do this in datasets.py
+            sentence_labels = torch.flatten(sentence_labels, start_dim=0, end_dim=1).long()[
+                sampled_idxs
+            ].to(device)
 
-    claims = claims.to(device)
-    sentence_labels = sentence_labels.to(device)
+            loss = criterion(preds, sentence_labels)
+            loss.backward()
+            optim.step()
 
-    # Generate predictions
-    preds = []
-    for sentences in sentences_batch:
-        article_preds = []
-        for sentence in sentences:
-            sentence = sentence.to(device)
-            article_preds.append(model(claims, sentence.unsqueeze(0)))
-        preds.append(torch.cat(article_preds))
-    preds = torch.cat(preds)
-    # TODO: do this in datasets.py
-    sentence_labels = torch.flatten(sentence_labels, start_dim=0, end_dim=1).long()[
-        sampled_idxs
-    ]
+            print(F.softmax(preds))
+            print("Predictions:", *map(max_pred, preds))
+            print("Labels:     ", *map(int, sentence_labels))
+            print("Loss:       ", loss.item())
+            print()
 
-    loss = criterion(preds, sentence_labels)
-    loss.backward()
-    optim.step()
-
-    print(F.softmax(preds))
-    print("Predictions:", *map(max_pred, preds))
-    print("Labels:     ", *map(int, sentence_labels))
-    print("Loss:       ", loss.item())
-    print()
+            p_v = list(map(max_pred, preds))
+            p_l = list(map(int, sentence_labels))
+            log(loss.item(), name="loss")
+            log(*p_v, name="preds")
+            log(*p_l, name="labels")
+            log(sum(v == l for v, l in zip(p_v, p_l)) / len(p_v), name="accuracy")
+            if d_i % 1000 == 0:
+                save_checkpoint()
+                c_num += 1
+    finally:
+        save_checkpoint()

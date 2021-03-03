@@ -9,7 +9,7 @@ from sherlock.data.util import tokenize_word
 class LSTMModel(nn.Module):
     """ A simple LSTM Model for Natural Language Inference"""
 
-    def __init__(self, char_embeds_size=10, word_embeds_size=50, sent_embeds_size=100):
+    def __init__(self, char_embeds_size=10, word_embeds_size=20, sent_embeds_size=10):
         """
 
         :param char_embeds_size: int, default 10
@@ -31,10 +31,10 @@ class LSTMModel(nn.Module):
 
         # Prediction LSTM
         self.lstm1 = nn.LSTM(
-            input_size=2, hidden_size=10, batch_first=True, bidirectional=False
+            input_size=2, hidden_size=3, batch_first=True, bidirectional=False
         )
 
-        self.dense = nn.Linear(10, 3)
+        #self.dense = nn.Linear(3, 3)
 
     def embed_words(self, words):
         """
@@ -54,7 +54,8 @@ class LSTMModel(nn.Module):
         else:
             # Is list of list of tokens
             words = torch.LongTensor(words)
-        words = self.char_embeds(words.to(conf.device))
+
+        words = torch.tanh(self.char_embeds(words.to(conf.device)))
         # Check batch
         if len(words.shape) == 2:
             words = words.unsqueeze(0)
@@ -62,6 +63,8 @@ class LSTMModel(nn.Module):
         embeddings = torch.mean(
             self.word_lstm(words)[0], dim=1
         )  # We want output not hidden layers
+        #embeddings = self.word_lstm(words)[0][:, -1, :]
+
         return embeddings
 
     def embed_sentence(self, sentence: torch.Tensor):
@@ -72,7 +75,10 @@ class LSTMModel(nn.Module):
             Batch first Tensor of word embeddings
         :return: torch.Tensor[sent_embeds_size]
         """
-        return torch.mean(self.sentence_lstm(sentence)[0], dim=1).unsqueeze(0)
+        #print(self.sentence_lstm(sentence)[0])
+        #print(self.sentence_lstm(sentence)[0].shape)
+        return torch.sum(self.sentence_lstm(sentence)[0], dim=1)
+        #return self.sentence_lstm(sentence)[0][:, -1, :]
 
     def forward(self, x, y):
         """
@@ -88,4 +94,5 @@ class LSTMModel(nn.Module):
         """
         combined = torch.cat([x, y]).unsqueeze(0)
         combined = combined.permute(0, 2, 1)  # This is bad but I have no choice :(
-        return self.dense(torch.mean(self.lstm1(combined)[0], dim=1))
+        #return self.dense(torch.mean(self.lstm1(combined)[0], dim=1))
+        return torch.mean(self.lstm1(combined)[0], dim=1)
