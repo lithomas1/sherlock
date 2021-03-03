@@ -62,11 +62,10 @@ class BaseModel(nn.Module):
             reverse=True
         )
 
-        # TODO: consider whether to remove false.disagree
         # We don't use false.disagree since a lot of the false claims
         # are crazy and denial of them means nothing
         return Verification(
-            agree=sort(true.agree + false.disagree)[:3],
+            agree=sort(true.agree)[:3],
             disagree=sort(true.disagree + false.agree)[:3],
         )
 

@@ -3,6 +3,7 @@
 
   let agree = [];
   let disagree = [];
+  let error = '';
 
   async function getVerification(claim) {
     return await fetch(`/verify?claim=${claim}`)
@@ -10,47 +11,57 @@
   }
 
   $: r = (async (claim) => {
-    const verification = await getVerification(claim);
-    agree = verification.agree;
-    disagree = verification.disagree;
+    try {
+      const verification = await getVerification(claim);
+      agree = verification.agree;
+      disagree = verification.disagree;
+      error = '';
+    } catch (e_) {
+      error = 'Request failed';
+    }
   })(claim);
 
 </script>
 
-<div class="check-claim">
-  <div class="agree">
-    <table>
-      <tr>
-        <th>Agree</th>
-        <th>Confidence</th>
-        <th>Not significant</th>
-      </tr>
-      {#each agree as ag}
+{#if error}
+  <p>Looks like something went wrong</p>
+  <p><code>{error}</code></p>
+{:else}
+  <div class="check-claim">
+    <div class="agree">
+      <table>
         <tr>
-          <td>{ag[0]}</td>
-          <td>{ag[1]}</td>
-          <td>{ag[2]}</td>
+          <th>Agree</th>
+          <th>Confidence</th>
+          <th>Not significant</th>
         </tr>
-      {/each}
-    </table>
-  </div>
-  <div class="disagree">
-    <table>
-      <tr>
-        <th>Disagree</th>
-        <th>Confidence</th>
-        <th>Not significant</th>
-      </tr>
-      {#each disagree as dg}
+        {#each agree as ag}
+          <tr>
+            <td>{ag[0]}</td>
+            <td>{ag[1]}</td>
+            <td>{ag[2]}</td>
+          </tr>
+        {/each}
+      </table>
+    </div>
+    <div class="disagree">
+      <table>
         <tr>
-          <td>{dg[0]}</td>
-          <td>{dg[1]}</td>
-          <td>{dg[2]}</td>
+          <th>Disagree</th>
+          <th>Confidence</th>
+          <th>Not significant</th>
         </tr>
-      {/each}
-    </table>
+        {#each disagree as dg}
+          <tr>
+            <td>{dg[0]}</td>
+            <td>{dg[1]}</td>
+            <td>{dg[2]}</td>
+          </tr>
+        {/each}
+      </table>
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   table {
