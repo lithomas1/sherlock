@@ -1,5 +1,4 @@
 <script>
-  import { onMount } from 'svelte';
   export let claim = '';
 
   let agree = [];
@@ -10,11 +9,13 @@
       .then(r => r.json());
   }
 
-  onMount(async () => {
+  $: r = (async (claim) => {
     const verification = await getVerification(claim);
     agree = verification.agree;
     disagree = verification.disagree;
-  });
+    console.log("VERIFYING");
+  })(claim);
+
 </script>
 
 <div class="check-claim">
