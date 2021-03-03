@@ -85,7 +85,7 @@
     background-color: #FEFEFE;
     margin: auto;
     padding: 20px;
-    width: 50%;
+    width: 80%;
     border: 1px solid #888;
   }
 

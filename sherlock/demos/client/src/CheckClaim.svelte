@@ -23,11 +23,13 @@
       <tr>
         <th>Agree</th>
         <th>Confidence</th>
+        <th>Not significant</th>
       </tr>
       {#each agree as ag}
         <tr>
           <td>{ag[0]}</td>
           <td>{ag[1]}</td>
+          <td>{ag[2]}</td>
         </tr>
       {/each}
     </table>
@@ -37,11 +39,13 @@
       <tr>
         <th>Disagree</th>
         <th>Confidence</th>
+        <th>Not significant</th>
       </tr>
       {#each disagree as dg}
         <tr>
           <td>{dg[0]}</td>
           <td>{dg[1]}</td>
+          <td>{dg[2]}</td>
         </tr>
       {/each}
     </table>

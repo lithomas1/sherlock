@@ -17,6 +17,7 @@ import numpy as np
 class FactCheck(NamedTuple):
     evidence: str
     strength: float
+    is_null: float
 
 
 @dataclass
@@ -48,9 +49,13 @@ class BaseModel(nn.Module):
             print("[WARNING]", f"no model found at {self.model_path}")
 
     def verify(self, claim: str) -> Verification:
-        get_claims = lambda pol: [p.claim[:99] for p in pol]
+        get_claims = lambda pol: [p.claim for p in pol]
         true = self.__raw_verify(claim, get_claims(self.true), 3)
         false = self.__raw_verify(claim, get_claims(self.false), 3)
+        for i, f in enumerate(false.agree):
+            false.agree[i] = f._replace(evidence=f"Proven false: {f.evidence}")
+        for i, f in enumerate(false.disagree):
+            false.disagree[i] = f._replace(evidence=f"Proven false: {f.evidence}")
         sort = functools.partial(
             sorted,
             key=attrgetter("strength"),
@@ -100,17 +105,18 @@ class BaseModel(nn.Module):
         preds_list = np.stack(preds_list)
 
         l = len(preds_list)
-        sort = functools.partial(sorted, range(l), reverse=True)
+        ids = [i for i in range(l) if max(preds_list[i][0]) != preds_list[i][0][0]]
+        sort = functools.partial(sorted, ids, reverse=True)
         agree_idxs = sort(key=lambda x: preds_list[x][0][1])[:k]
         disagree_idxs = sort(key=lambda x: preds_list[x][0][2])[:k]
 
         return Verification(
             agree=[
-                FactCheck(article[idx], float(preds_list[idx][0][1]))
+                FactCheck(article[idx], *map(float, (preds_list[idx][0][:2][::-1])))
                 for idx in agree_idxs
             ],
             disagree=[
-                FactCheck(article[idx], float(preds_list[idx][0][2]))
+                FactCheck(article[idx], *map(float, (preds_list[idx][0][::2][::-1])))
                 for idx in disagree_idxs
             ]
         )
