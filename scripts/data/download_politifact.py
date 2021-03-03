@@ -97,7 +97,7 @@ class FactCheck:
     @staticmethod
     def claim_from_card(card: Tag) -> str:
         quote = card.find("div", {"class": "m-statement__quote"})
-        return quote.text.strip().replace("\u201c", "").replace("\u201d", "")
+        return quote.text.strip().replace("\u201c", "").replace("\u201d", "").replace("\u2019", "'")
 
 
 @suppress_exceptions([])
@@ -140,7 +140,7 @@ async def main():
         )
     checks = [cc for cc in it.chain(*(c for c in checks if c)) if cc]
     v[:] = checks
-    print(json.dumps(list(map(dataclasses.asdict, checks)), indent=2))
+    print(json.dumps(list(map(dataclasses.asdict, checks))))
 
 
 if __name__ == "__main__":
